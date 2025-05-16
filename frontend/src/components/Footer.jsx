@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip"
 import { Activity, Facebook, Instagram, Linkedin, Moon, Send, Sun, Twitter, X } from "lucide-react"
+import ChatSupport from "./ChatSupport"
 
 export default function Footerdemo() {
   const [isDarkMode, setIsDarkMode] = React.useState(true)
@@ -174,7 +175,7 @@ export default function Footerdemo() {
       >
         {isChatOpen ? <X /> : <Activity />}
       </Button>
-      {isChatOpen && (
+      {/* {isChatOpen && (
         <div className="fixed bottom-20 right-4 z-50 w-80 rounded-lg border bg-background p-4 shadow-lg">
           <h4 className="mb-4 text-lg font-semibold">Live Chat</h4>
           <div className="mb-4 h-40 overflow-y-auto rounded border p-2">
@@ -190,7 +191,8 @@ export default function Footerdemo() {
             </Button>
           </form>
         </div>
-      )}
+      )} */}
+      {isChatOpen && <ChatSupport />}
     </footer>
   )
 }
