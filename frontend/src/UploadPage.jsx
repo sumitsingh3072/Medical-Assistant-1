@@ -32,47 +32,64 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
     reader.readAsDataURL(selectedFile);
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setError('Please select a file first.');
-      return;
-    }
+  const BASE_API_URL = 'http://127.0.0.1:8000/predict/';
 
-    if (!selectedImageType) {
-      setError('Please select an image type first.');
-      return;
-    }
+const handleUpload = async () => {
+  if (!file) {
+    setError('Please select a file first.');
+    return;
+  }
 
-    try {
-      setUploading(true);
-      setError(null);
-      setUploadProgress(0);
+  if (!selectedImageType) {
+    setError('Please select an image type first.');
+    return;
+  }
 
-      const formData = new FormData();
-      formData.append('file', file);  // <-- Changed key from 'image' to 'file'
-      formData.append('imageType', selectedImageType);
-
-      const response = await axios.post('http://127.0.0.1:8000/predict/xray/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
-
-      setProcessedData(response.data);
-      navigate('/results');
-    } catch (err) {
-      console.error(err);
-      setError('An error occurred during upload. Please try again.');
-    } finally {
-      setUploading(false);
-    }
+  const endpointMap = {
+    xray: `${BASE_API_URL}xray/`,
+    mri: `${BASE_API_URL}mri/`,
+    ct_scan: `${BASE_API_URL}ct/`,
+    ultrasound: `${BASE_API_URL}ultrasound/`,
   };
+
+  const endpoint = endpointMap[selectedImageType];
+  if (!endpoint) {
+    setError('No endpoint defined for selected image type.');
+    return;
+  }
+
+  try {
+    setUploading(true);
+    setError(null);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('imageType', selectedImageType);
+
+    const response = await axios.post(endpoint, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      },
+    });
+
+    setProcessedData(response.data);
+    navigate('/results');
+  } catch (err) {
+    console.error(err);
+    setError('An error occurred during upload. Please try again.');
+  } finally {
+    setUploading(false);
+  }
+};
+
+
 
   return (
     <Card className="w-full shadow-md min-h-screen">

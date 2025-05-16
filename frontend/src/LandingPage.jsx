@@ -2,12 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
-import { 
-  FileText, 
-  Clock, 
-  Brain, 
-  CloudLightning, 
-  Shield, 
+import {
+  FileText,
+  Clock,
+  Brain,
+  CloudLightning,
+  Shield,
   Database,
   ArrowRight,
   ChevronDownCircleIcon
@@ -19,7 +19,7 @@ import { Ripple } from "./components/magicui/ripple";
 import { SparklesText } from "./components/magicui/sparkles-text";
 import { Feedback } from './components/FeedBackCard';
 import Testimonials from './components/Testimonials';
-import { SmoothCursor } from "./components/ui/smooth-cursor";
+import { ScratchToReveal } from "./components/magicui/scratch-to-reveal";
 
 const LandingPage = () => {
   return (
@@ -36,28 +36,28 @@ const LandingPage = () => {
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl tracking-tight">
                 Diagnose Smarter, <br />
-              <SparklesText>
-                <span className="text-blue-400 font-base">Faster, Better.</span>
-              </SparklesText>
+                <SparklesText>
+                  <span className="text-blue-400 font-base">Faster, Better.</span>
+                </SparklesText>
               </h1>
-              
+
               <p className="text-gray-600 dark:text-slate-300 text-lg md:text-xl max-w-md">
                 Harness the power of 4 specialized AI models to analyze medical images with unprecedented accuracy and speed.
               </p>
-              
+
               <div className="pt-4 flex flex-wrap gap-4">
-                
-                  <Link to="/upload">
-                    <InteractiveHoverButton>Start Diagnosis</InteractiveHoverButton>
-                  </Link>
-                
-                
-                  <a href="#features">
-                    <RippleButton className='rounded-full'><span className='flex items-center justify-center gap-2 font-smeibold'>Learn More <ChevronDownCircleIcon className='text-gray-500'/></span></RippleButton>
-                  </a>
-                
+
+                <Link to="/upload">
+                  <InteractiveHoverButton>Start Diagnosis</InteractiveHoverButton>
+                </Link>
+
+
+                <a href="#features">
+                  <RippleButton className='rounded-full'><span className='flex items-center justify-center gap-2 font-smeibold'>Learn More <ChevronDownCircleIcon className='text-gray-500' /></span></RippleButton>
+                </a>
+
               </div>
-              
+
               <div className="pt-6 flex items-center text-black dark:text-slate-400 text-sm">
                 <div className="flex -space-x-2 mr-3">
                   <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-medium text-white">JD</div>
@@ -67,18 +67,18 @@ const LandingPage = () => {
                 Trusted by 5,000+ medical professionals worldwide
               </div>
             </div>
-            
+
             <div className="hidden md:block relative">
               {/* <div className="absolute -left-8 -top-8 w-64 h-64 bg-blue-500 rounded-full filter blur-3xl opacity-20"></div>
               <div className="absolute -right-8 -bottom-8 w-64 h-64 bg-purple-500 rounded-full filter blur-3xl opacity-20"></div> */}
 
-              <HeroList/>
-              
+              <HeroList />
+
             </div>
           </div>
         </div>
       </section>
-      
+
       {/* Features Section */}
       <section id="features" className="py-16 bg-white dark:bg-zinc-950">
         <div className="container mx-auto px-4 md:px-6">
@@ -88,7 +88,7 @@ const LandingPage = () => {
               MediVision AI combines cutting-edge technology with medical expertise to deliver unparalleled diagnostic assistance.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-6">
             {/* Feature 1 */}
             <Card className="border-2 shadow-md hover:shadow-lg transition-shadow duration-300 dark:border-slate-900">
@@ -102,7 +102,7 @@ const LandingPage = () => {
                 </p>
               </CardContent>
             </Card>
-            
+
             {/* Feature 2 */}
             <Card className="border-2 shadow-md hover:shadow-lg transition-shadow duration-300 dark:border-slate-900">
               <CardContent className="pt-6">
@@ -115,7 +115,7 @@ const LandingPage = () => {
                 </p>
               </CardContent>
             </Card>
-            
+
             {/* Feature 3 */}
             <Card className="border-2 shadow-md hover:shadow-lg transition-shadow duration-300 dark:border-slate-900">
               <CardContent className="pt-6">
@@ -128,7 +128,7 @@ const LandingPage = () => {
                 </p>
               </CardContent>
             </Card>
-            
+
             {/* Feature 4 */}
             <Card className="border-2 shadow-md hover:shadow-lg transition-shadow duration-300 dark:border-slate-900">
               <CardContent className="pt-6">
@@ -141,7 +141,7 @@ const LandingPage = () => {
                 </p>
               </CardContent>
             </Card>
-            
+
             {/* Feature 5 */}
             <Card className="border-2 shadow-md hover:shadow-lg transition-shadow duration-300 dark:border-slate-900">
               <CardContent className="pt-6">
@@ -154,7 +154,7 @@ const LandingPage = () => {
                 </p>
               </CardContent>
             </Card>
-            
+
             {/* Feature 6 */}
             <Card className="border-2 shadow-md hover:shadow-lg transition-shadow duration-300 dark:border-slate-900">
               <CardContent className="pt-6">
@@ -170,61 +170,72 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      
+
       {/* CTA Section */}
       <section className=" bg-white dark:bg-zinc-950">
         <div className="relative flex h-[500px] w-full flex-col items-center justify-center overflow-hidden rounded-lg bg-background">
-      <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-5xl font-bold tracking-tight mb-4">
-              Ready to Transform Your Diagnostic Workflow?
-            </h2>
-            <p className="text-slate-600 mb-8 max-w-xl mx-auto">
-              Join thousands of medical professionals already using MediVision AI to improve accuracy and save time.
-            </p>
-            <Button 
-              asChild
-              size="lg" 
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 shadow-lg rounded-full transition-transform transform hover:scale-105"
-            >
-              <Link to="/upload">
-                Start Your First Analysis <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-5xl font-bold tracking-tight mb-4">
+                Ready to Transform Your Diagnostic Workflow?
+              </h2>
+              <p className="text-slate-600 mb-8 max-w-xl mx-auto">
+                Join thousands of medical professionals already using MediVision AI to improve accuracy and save time.
+              </p>
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 shadow-lg rounded-full transition-transform transform hover:scale-105"
+              >
+                <Link to="/upload">
+                  Start Your First Analysis <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
+          <Ripple />
         </div>
-      <Ripple />
-    </div>
-        
+
       </section>
 
       {/* Contact Section */}
-<section className="py-16 bg-white dark:bg-zinc-950 transition-colors">
-  <div className="container mx-auto px-4 md:px-6">
-    <div className="text-center mb-12">
-      <h2 className="text-3xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-white">
-        Get in Touch
-      </h2>
-      <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-        Have questions or need support? Our team is here to help you.
-      </p>
-    </div>
+      <section className="py-16 px-4 md:px-96 flex items-center justify-between bg-white dark:bg-zinc-950 transition-colors gap-2">
+        <div className="container">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold tracking-tight mb-2 text-zinc-900 dark:text-white">
+              Get in Touch
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              Have questions or need support? Our team is here to help you.
+            </p>
+          </div>
 
-    <div className="flex justify-center">
-      <Button
-        asChild
-        size="lg"
-        className="bg-white text-black px-8 shadow-lg rounded-full transition-transform transform hover:scale-105 text-sm font-bold"
-      >
-        <Link to="/contact">Contact Us</Link>
-      </Button>
-    </div>
-  </div>
-</section>
+          <div className="flex">
+            <Button
+              asChild
+              size="lg"
+              className="bg-white text-black px-8 shadow-lg rounded-full transition-transform transform hover:scale-105 text-sm font-bold"
+            >
+              <Link to="/contact">Contact Us</Link>
+            </Button>
+          </div>
+        </div>
+        <div>
+          <ScratchToReveal
+      width={250}
+      height={250}
+      minScratchPercentage={70}
+      className="flex items-center justify-center overflow-hidden rounded-2xl border-2 bg-gray-100"
+      gradientColors={["#A97CF8", "#F38CB8", "#FDCC92"]}
+    >
+      <p className="text-9xl">😎</p>
+    </ScratchToReveal>
+        </div>
+      </section>
 
 
-        {/* Feedback Section */}
-        <>
+      {/* Feedback Section */}
+      <>
         <div className="bg-white dark:bg-zinc-950 transition-colors">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
@@ -236,12 +247,12 @@ const LandingPage = () => {
           </div>
         </div>
         <div >
-        <Testimonials />
+          <Testimonials />
         </div>
         <div className="flex items-center justify-center bg-white dark:bg-zinc-950 py-5">
-            <Feedback/>
+          <Feedback />
         </div>
-        </>
+      </>
 
     </div>
   );
