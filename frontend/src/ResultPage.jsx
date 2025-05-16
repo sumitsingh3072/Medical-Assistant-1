@@ -1,44 +1,64 @@
 import React, { useEffect, useState } from 'react';
 import ReportCard from './ReportCard';
 
-// Mock data to simulate API response
-const mockReportData = {
-  symptoms: ['Persistent cough', 'Shortness of breath', 'Chest pain'],
-  report: 'The analysis indicates signs of mild respiratory distress. Patterns are consistent with early bronchial inflammation.',
-  confidence: 88
-};
-
 const ResultsPage = () => {
+  const [rawResults, setRawResults] = useState(null);
   const [reportData, setReportData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate API call
     const fetchData = async () => {
-      // Uncomment and replace with your actual API call:
-      // try {
-      //   const response = await fetch('/api/report');
-      //   const data = await response.json();
-      //   setReportData(data);
-      // } catch (error) {
-      //   console.error('Error fetching report data:', error);
-      // }
+      try {
+        const res = await fetch('http://127.0.0.1:8000/get_latest_results/');
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+        setRawResults(data);
 
-      // Using mock data for now
-      setTimeout(() => {
-        setReportData(mockReportData);
-      }, 500); // simulate network delay
+        // Transform rawResults into reportData shape
+        const entries = Object.entries(data);
+        if (entries.length === 0) {
+          setReportData({
+            symptoms: [],
+            report: 'No conditions detected.',
+            confidence: 0
+          });
+          return;
+        }
+
+        // Sort by descending score
+        const sorted = entries.sort((a, b) => b[1] - a[1]);
+        const topK = sorted.slice(0, 3);
+
+        // symptoms = list of the top-3 conditions
+        const symptoms = topK.map(([cond]) => cond);
+
+        // report text summarizing the top condition
+        const [bestCond, bestScore] = sorted[0];
+        const report = `Most likely condition is ${bestCond}.`;
+
+        // confidence as a whole number percentage
+        const confidence = Math.round(bestScore * 100);
+
+        setReportData({ symptoms, report, confidence });
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load report. Please try again.');
+      }
     };
 
     fetchData();
   }, []);
 
+  if (error) {
+    return <div className="p-6 text-center text-red-600">{error}</div>;
+  }
+  if (!reportData) {
+    return <div className="p-6 text-center text-slate-500">Loading report...</div>;
+  }
+
   return (
     <div className="p-6">
-      {reportData ? (
-        <ReportCard reportData={reportData} />
-      ) : (
-        <div className="text-center text-slate-500">Loading report...</div>
-      )}
+      <ReportCard reportData={reportData} />
     </div>
   );
 };

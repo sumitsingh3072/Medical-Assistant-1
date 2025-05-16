@@ -49,10 +49,10 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
       setUploadProgress(0);
 
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('file', file);  // <-- Changed key from 'image' to 'file'
       formData.append('imageType', selectedImageType);
 
-      const response = await axios.post('http://localhost:5000/analyze', formData, {
+      const response = await axios.post('http://127.0.0.1:8000/predict/xray/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
