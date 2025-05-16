@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+torch
+torchvision
+pydicom
+opencv-python
+scikit-learn
+numpy
+pillow
+pydantic
+fastapi-users
