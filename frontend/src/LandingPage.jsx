@@ -34,15 +34,15 @@ const LandingPage = () => {
                 <span className="flex h-2 w-2 rounded-full bg-blue-400 mr-2"></span>
                 Medical Imaging Enhanced by AI
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl tracking-tight">
                 Diagnose Smarter, <br />
               <SparklesText>
-                <span className="text-blue-400">Faster, Better.</span>
+                <span className="text-blue-400 font-base">Faster, Better.</span>
               </SparklesText>
               </h1>
               
               <p className="text-gray-600 dark:text-slate-300 text-lg md:text-xl max-w-md">
-                Harness the power of 9 specialized AI models to analyze medical images with unprecedented accuracy and speed.
+                Harness the power of 4 specialized AI models to analyze medical images with unprecedented accuracy and speed.
               </p>
               
               <div className="pt-4 flex flex-wrap gap-4">
@@ -96,7 +96,7 @@ const LandingPage = () => {
                 <div className="rounded-lg bg-blue-50 p-3 w-12 h-12 flex items-center justify-center mb-4">
                   <Brain className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">9 Specialized AI Models</h3>
+                <h3 className="text-lg font-medium mb-2">4 Specialized AI Models</h3>
                 <p className="text-slate-600 text-sm">
                   Purpose-built AI models optimized for specific medical imaging modalities, from brain MRIs to retinal scans.
                 </p>
