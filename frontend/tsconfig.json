@@ -4,9 +4,11 @@
     {
       "path": "./tsconfig.app.json"
     },
+    // Removed the reference to the missing file
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"]
     }
