@@ -183,7 +183,7 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
 
         {preview && (
           <div className="mt-6">
-            <SegmentedImageViewer imageSrc={preview} />
+            <SegmentedImageViewer imageUrl={preview} imageType={selectedImageType} />
           </div>
         )}
       </CardContent>

@@ -13,7 +13,7 @@ const Header = () => {
           <span>MediVision AI</span>
         </Link>
         
-        <nav className="hidden md:flex items-center gap-6">
+        {/* <nav className="hidden md:flex items-center gap-6">
           <Link to="/" className="text-sm font-medium transition-colors hover:text-blue-600 flex items-center gap-2">
             <Home className="h-4 w-4" />
             Home
@@ -22,7 +22,7 @@ const Header = () => {
             <FileText className="h-4 w-4" />
             Analysis
           </Link>
-        </nav>
+        </nav> */}
         
         <div className="flex items-center gap-4">
           <ModeToggle />

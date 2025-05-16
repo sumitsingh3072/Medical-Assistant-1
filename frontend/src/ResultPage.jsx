@@ -50,14 +50,14 @@ const ResultsPage = () => {
   }, []);
 
   if (error) {
-    return <div className="p-6 text-center text-red-600">{error}</div>;
+    return <div className="p-6 text-center text-2xl text-red-600 opacity-40 min-h-screen">{error}😢</div>;
   }
   if (!reportData) {
-    return <div className="p-6 text-center text-slate-500">Loading report...</div>;
+    return <div className="p-6 text-center text-slate-500 min-h-screen">Loading report...</div>;
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 min-h-screen">
       <ReportCard reportData={reportData} />
     </div>
   );

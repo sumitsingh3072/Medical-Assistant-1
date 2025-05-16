@@ -1,73 +1,39 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Brain, Heart, Stethoscope, Eye, Dna, Zap, Bone, Thermometer, BarChart } from 'lucide-react';
+import { Brain, Heart, Stethoscope, Eye, Dna, Zap, Bone, Thermometer, BarChart, ScanHeart, AudioWaveform } from 'lucide-react';
 
 const imageTypes = [
   {
-    id: 'brain_mri',
-    name: 'Brain MRI',
-    description: 'Neurological conditions, tumors, hemorrhage detection',
-    icon: Brain,
+    id: 'mri',
+    name: 'MRI',
+    description: 'Detailed imaging for brain, heart, and soft tissues',
+    icon: Brain, // or another general MRI icon
     color: 'bg-purple-500',
   },
   {
-    id: 'chest_xray',
-    name: 'Chest X-Ray',
-    description: 'Pneumonia, lung cancer, tuberculosis screening',
-    icon: Stethoscope,
-    color: 'bg-blue-500',
-  },
-  {
-    id: 'cardiac_mri',
-    name: 'Cardiac MRI',
-    description: 'Heart structure, function, and tissue characterization',
-    icon: Heart,
-    color: 'bg-red-500',
-  },
-  {
-    id: 'retinal_scan',
-    name: 'Retinal Scan',
-    description: 'Diabetic retinopathy, macular degeneration',
-    icon: Eye,
-    color: 'bg-emerald-500',
-  },
-  {
-    id: 'bone_xray',
-    name: 'Bone X-Ray',
-    description: 'Fractures, osteoporosis, bone density',
-    icon: Bone,
-    color: 'bg-amber-500',
-  },
-  {
-    id: 'histopathology',
-    name: 'Histopathology',
-    description: 'Tissue analysis for cancer and disease',
-    icon: Dna,
-    color: 'bg-pink-500',
-  },
-  {
-    id: 'ecg',
-    name: 'ECG Analysis',
-    description: 'Heart rhythm abnormalities, arrhythmias',
-    icon: Zap,
-    color: 'bg-rose-500',
-  },
-  {
-    id: 'thermography',
-    name: 'Thermography',
-    description: 'Heat patterns for inflammation detection',
-    icon: Thermometer,
+    id: 'xray',
+    name: 'X-Ray',
+    description: 'Bone fractures, chest screenings, and more',
+    icon: Bone, // or Stethoscope if you prefer chest representation
     color: 'bg-orange-500',
   },
   {
-    id: 'endoscopy',
-    name: 'Endoscopy',
-    description: 'GI tract analysis for polyps and lesions',
-    icon: BarChart,
-    color: 'bg-teal-500',
+    id: 'ct_scan',
+    name: 'CT Scan',
+    description: 'Cross-sectional imaging for organs and tissues',
+    icon: ScanHeart, // define or import suitable CT icon
+    color: 'bg-indigo-500',
+  },
+  {
+    id: 'ultrasound',
+    name: 'Ultrasound',
+    description: 'Soft tissue and pregnancy imaging in real-time',
+    icon: AudioWaveform, // define or import suitable ultrasound icon
+    color: 'bg-green-500',
   },
 ];
+
 
 const ImageTypeSelector = ({ selectedImageType, setSelectedImageType }) => {
   return (

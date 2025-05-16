@@ -238,7 +238,7 @@ const LandingPage = () => {
         <div >
         <Testimonials />
         </div>
-        <div className="flex items-center justify-center bg-gradient-to-br from-white via-white to-blue-900 dark:bg-gradient-to-br dark:from-black dark:via-blue-900 dark:to-black text-black dark:text-white py-5">
+        <div className="flex items-center justify-center bg-white dark:bg-zinc-950 py-5">
             <Feedback/>
         </div>
         </>
