@@ -24,7 +24,7 @@ import { SmoothCursor } from "./components/ui/smooth-cursor";
 const LandingPage = () => {
   return (
     <div className="flex flex-col w-full">
-      <SmoothCursor />
+      {/* <SmoothCursor /> */}
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-white via-white to-blue-900 dark:bg-gradient-to-br dark:from-black dark:via-black dark:to-blue-900 text-black dark:text-white py-16 md:py-24">
         <div className="container mx-auto px-4 md:px-6">
