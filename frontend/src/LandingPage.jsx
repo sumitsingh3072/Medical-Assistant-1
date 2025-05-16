@@ -20,6 +20,7 @@ import { SparklesText } from "./components/magicui/sparkles-text";
 import { Feedback } from './components/FeedBackCard';
 import Testimonials from './components/Testimonials';
 import { ScratchToReveal } from "./components/magicui/scratch-to-reveal";
+import FaqSection from './components/FaqSection';
 
 const LandingPage = () => {
   return (
@@ -253,6 +254,20 @@ const LandingPage = () => {
           <Feedback />
         </div>
       </>
+
+      {/* FAQ Section */}
+      <section className="py-16 bg-white dark:bg-zinc-950">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight mb-2">Frequently Asked Questions</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">
+              Have questions? We have answers. Check out our FAQ section for more information.
+            </p>
+          </div>
+          {/* Add your FAQ component here */}
+          <FaqSection/>
+        </div>
+      </section>
 
     </div>
   );
