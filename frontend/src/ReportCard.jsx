@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import { pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import ReportPDF from "./components/ReportPDF"
+import { useNavigate } from 'react-router-dom';
 
 import {
   Card,
@@ -22,11 +23,13 @@ import {
   DialogTitle,
   DialogTrigger
 } from './components/ui/dialog'
+import { InteractiveHoverButton } from "./components/magicui/interactive-hover-button";
 
 const ReportCard = ({ reportData }) => {
   const { symptoms = [], report = '', confidence = 0 } = reportData || {}
   const cardRef = useRef(null)
   const [openDialog, setOpenDialog] = useState(false)
+  const navigate = useNavigate();
 
   const getConfidenceColor = (score) => {
     if (score >= 85) return 'text-green-600'
@@ -190,6 +193,14 @@ const ReportCard = ({ reportData }) => {
           </DialogContent>
         </Dialog>
       </CardFooter>
+      <div className="flex justify-start px-6">
+        <InteractiveHoverButton className="mt-4"
+          onClick={() => navigate('/resultchat')}>Chat about Report</InteractiveHoverButton>
+      </div>
+      <div className="flex justify-start px-6">
+        <InteractiveHoverButton className="mt-4"
+          onClick={() => navigate('/doctor-search')}>Find a Doctor</InteractiveHoverButton>
+      </div>
     </Card>
   )
 }

@@ -7,6 +7,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Contact from './Contact';
 import ResultChatPage from './ResultChatPage';
+import DoctorSearchPage from './DoctorSearchPage';
 
 function App() {
   // Global state for selected image type and processed data
@@ -39,6 +40,7 @@ function App() {
             } 
           />
           <Route path="/resultchat" element={<ResultChatPage />} />
+          <Route path="/doctor-search" element={<DoctorSearchPage />} />
           <Route path='/contact' element={<Contact/>} />
         </Routes>
       </main>

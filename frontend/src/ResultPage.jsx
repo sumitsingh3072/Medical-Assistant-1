@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import ReportCard from './ReportCard';
-import { Button } from './components/ui/button'; // adjust the path if needed
+
 
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
@@ -9,7 +8,6 @@ const ResultsPage = () => {
   const [rawResults, setRawResults] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,16 +61,8 @@ const ResultsPage = () => {
   }
 
   return (
-    <div className="p-6 min-h-screen space-y-6">
+    <div className="p-6 min-h-screen space-y-6 bg-zinc-200 dark:bg-black">
       <ReportCard reportData={reportData} />
-      <div className="flex justify-center">
-        <Button
-          className="mt-4"
-          onClick={() => navigate('/resultchat')}
-        >
-          Chat About This Report
-        </Button>
-      </div>
     </div>
   );
 };
