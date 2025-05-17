@@ -31,6 +31,7 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Global: store latest predictions for frontend polling
 latest_xray_results: dict = {}
+latest_reports = {}  
 
 # Startup: initialize all models
 @asynccontextmanager
@@ -189,6 +190,11 @@ async def generate_report(
         os.remove(temp_path)
 
         report = generate_medical_report(symptoms, img_bytes, modality)
+        # Store the report in a global variable
+        latest_reports[modality] = {
+        "symptoms": symptoms,
+        "report": report
+        }
         return JSONResponse(content={"symptoms": symptoms, "report": report})
     except HTTPException:
         os.remove(temp_path)
@@ -196,6 +202,13 @@ async def generate_report(
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/get-latest-report/{modality}/")
+async def get_latest_report(modality: str = Path(...)):
+    modality = modality.lower()
+    if modality not in latest_reports:
+        raise HTTPException(status_code=404, detail="No report available for this modality.")
+    return latest_reports[modality]
 
 # Mock database of doctors
 class Doctor(BaseModel):
