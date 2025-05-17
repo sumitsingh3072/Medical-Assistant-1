@@ -481,3 +481,63 @@ async def search_doctors(
 
     return enriched_doctors
 # @app.get("/api/get-doctor/{doctor_id}", response_model=Doctor)
+
+
+#chatbot of landing page 
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/chat_with_report/")
+async def chat_with_report(request: ChatRequest):
+    user_message = request.message.lower()
+
+    # Rule-based chatbot responses
+    if "upload" in user_message and "image" in user_message:
+        reply = (
+            "To upload a medical image, go to the 'Upload' section from the navbar. "
+            "There, you can choose from 6 model types: MRI 2D, MRI 3D, X-ray, Ultrasound, CT Scan 2D, and CT Scan 3D. "
+            "After selecting the type and uploading your image, click 'Upload and Analyze' to get the result."
+        )
+    elif "analyze" in user_message or "report" in user_message:
+        reply = (
+            "Once you upload an image and select the model type, clicking 'Upload and Analyze' will route you to the result page. "
+            "This page displays an AI-generated diagnostic report based on the image you provided."
+        )
+    elif "features" in user_message:
+        reply = (
+            "Our website offers features like disease prediction using 6 medical models, instant report generation, "
+            "testimonials from patients, a FAQ section, and easy contact options."
+        )
+    elif "models" in user_message or "which scans" in user_message:
+        reply = (
+            "The supported models are:\n"
+            "- MRI 2D\n- MRI 3D\n- X-ray\n- Ultrasound\n- CT Scan 2D\n- CT Scan 3D"
+        )
+    elif "contact" in user_message:
+        reply = (
+            "You can find the contact section by scrolling to the 'Contact' part of the homepage, or directly in the footer."
+        )
+    elif "testimonials" in user_message:
+        reply = (
+            "We showcase real testimonials from users who have benefited from our AI diagnosis platform."
+        )
+    elif "faq" in user_message or "questions" in user_message:
+        reply = (
+            "The FAQ section answers common questions related to uploading images, interpreting reports, and data privacy."
+        )
+    elif "hero" in user_message or "homepage" in user_message:
+        reply = (
+            "The hero section on our homepage highlights the goal of our platform — fast and accurate diagnosis from medical images using AI."
+        )
+    elif "cta" in user_message or "get started" in user_message:
+        reply = (
+            "The Call-To-Action (CTA) section encourages users to start using the platform by uploading an image and receiving a report."
+        )
+    else:
+        reply = (
+            "I'm here to help you with any questions about using the platform. "
+            "You can ask me how to upload images, what models are supported, or what happens after analysis."
+        )
+
+    return {"response": reply}
