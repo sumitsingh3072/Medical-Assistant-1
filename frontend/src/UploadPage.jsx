@@ -39,17 +39,29 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
     if (!selectedImageType) return setError('Please select an image type first.');
 
     let predictionEndpoint = '';
-    let reportEndpoint = '';
-    try {
-      const cleanType = selectedImageType.includes('_')
-        ? selectedImageType.split('_')[0]
-        : selectedImageType;
+let reportEndpoint = '';
 
-      predictionEndpoint = `${BASE_API_URL}/predict/${cleanType}/`;
-      reportEndpoint = `${BASE_API_URL}/generate-report/${cleanType}/`;
-    } catch (err) {
-      return setError('Invalid image type format.');
-    }
+try {
+  const parts = selectedImageType.split('_');
+  const modality = parts[0].toLowerCase(); // e.g., ct, xray
+  const subtype = parts[1]?.toLowerCase(); // e.g., 2d, 3d
+
+  if (modality === 'xray') {
+    predictionEndpoint = `${BASE_API_URL}/predict/xray/`;
+    reportEndpoint = subtype
+      ? `${BASE_API_URL}/generate-report/xray/${subtype}/`
+      : `${BASE_API_URL}/generate-report/xray/`;
+  } else {
+    reportEndpoint = subtype
+      ? `${BASE_API_URL}/generate-report/${modality}/${subtype}/`
+      : `${BASE_API_URL}/generate-report/${modality}/`;
+  }
+} catch (err) {
+  return setError('Invalid image type format.');
+}
+
+
+
 
     try {
       setUploading(true);
@@ -57,23 +69,27 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
       setUploadProgress(0);
 
       const formData = new FormData();
-      formData.append('file', file);
+formData.append('file', file);
 
-      // First Request: Prediction
-      const predictionRes = await axios.post(predictionEndpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
+let predictionRes = { data: { predictions: [] } };
 
-      // Second Request: Report generation
-      const reportRes = await axios.post(reportEndpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+// For xray, do prediction first
+if (predictionEndpoint) {
+  predictionRes = await axios.post(predictionEndpoint, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (progressEvent) => {
+      const percentCompleted = Math.round(
+        (progressEvent.loaded * 100) / progressEvent.total
+      );
+      setUploadProgress(percentCompleted);
+    },
+  });
+}
+
+const reportRes = await axios.post(reportEndpoint, formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+
 
       // Combine results
       setProcessedData({

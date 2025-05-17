@@ -236,7 +236,7 @@ const LandingPage = () => {
       className="flex items-center justify-center overflow-hidden rounded-2xl border-2 bg-gray-100"
       gradientColors={["#A97CF8", "#F38CB8", "#FDCC92"]}
     >
-      <p className="text-9xl">⚕️</p>
+      <p className="text-9xl">💉</p>
     </ScratchToReveal>
         </div>
       </section>
