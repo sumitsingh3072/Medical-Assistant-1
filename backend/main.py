@@ -197,9 +197,10 @@ async def generate_report(
 
         # Store the report in a global variable
         latest_reports[modality] = {
+        "disease": disease,
         "symptoms": symptoms,
-        "report": report,
-        "disease": disease
+        "report": report
+        
         }
         return JSONResponse(content={"symptoms": symptoms, "disease": disease ,"report": report})
     except HTTPException:
