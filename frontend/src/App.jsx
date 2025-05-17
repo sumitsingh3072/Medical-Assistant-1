@@ -40,7 +40,7 @@ function App() {
             } 
           />
           <Route path="/resultchat" element={<ResultChatPage />} />
-          <Route path="/doctor-search" element={<DoctorSearchPage />} />
+          <Route path="/search-doctor" element={<DoctorSearchPage />} />
           <Route path='/contact' element={<Contact/>} />
         </Routes>
       </main>

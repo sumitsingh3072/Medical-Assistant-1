@@ -5,34 +5,49 @@ import { Brain, Heart, Stethoscope, Eye, Dna, Zap, Bone, Thermometer, BarChart, 
 
 const imageTypes = [
   {
-    id: 'mri',
-    name: 'MRI',
-    description: 'Detailed imaging for brain, heart, and soft tissues',
-    icon: Brain, // or another general MRI icon
-    color: 'bg-purple-500',
+    id: 'mri_2d',
+    name: 'MRI (2D)',
+    description: '2D MRI scans for quick anatomical overview',
+    icon: Brain,
+    color: 'bg-purple-400',
+  },
+  {
+    id: 'mri_3d',
+    name: 'MRI (3D)',
+    description: '3D MRI scans for volumetric soft tissue analysis',
+    icon: Brain,
+    color: 'bg-purple-700',
   },
   {
     id: 'xray',
     name: 'X-Ray',
     description: 'Bone fractures, chest screenings, and more',
-    icon: Bone, // or Stethoscope if you prefer chest representation
+    icon: Bone,
     color: 'bg-orange-500',
   },
   {
-    id: 'ct_scan',
-    name: 'CT Scan',
-    description: 'Cross-sectional imaging for organs and tissues',
-    icon: ScanHeart, // define or import suitable CT icon
-    color: 'bg-indigo-500',
+    id: 'ct_2d',
+    name: 'CT Scan (2D)',
+    description: '2D CT slices for cross-sectional anatomy',
+    icon: ScanHeart,
+    color: 'bg-indigo-400',
+  },
+  {
+    id: 'ct_3d',
+    name: 'CT Scan (tumor)',
+    description: '3D reconstructed CT scans for volumetric imaging',
+    icon: ScanHeart,
+    color: 'bg-indigo-700',
   },
   {
     id: 'ultrasound',
     name: 'Ultrasound',
     description: 'Soft tissue and pregnancy imaging in real-time',
-    icon: AudioWaveform, // define or import suitable ultrasound icon
+    icon: AudioWaveform,
     color: 'bg-green-500',
   },
 ];
+
 
 
 const ImageTypeSelector = ({ selectedImageType, setSelectedImageType }) => {

@@ -1,61 +1,120 @@
 import React, { useEffect, useState } from 'react';
 import ReportCard from './ReportCard';
+import { useParams, useLocation } from 'react-router-dom'; // added useLocation
 
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
 const ResultsPage = () => {
+  const { cleanType } = useParams(); // e.g., 'xray', 'ct', etc.
+  const location = useLocation();
+
+  // Try to get the passed state from navigation:
+  const { selectedImageType, processedData } = location.state || {};
+
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    // If we have processedData from navigation, use it directly
+    if (processedData) {
+      // Construct your reportData using processedData from UploadPage
+      const predictionData = processedData.predictions || [];
+      const reportText = processedData.report || '';
+      const disease = processedData.disease || '';
+      const symptoms = processedData.symptoms || [];
+
+      // Find the top prediction for confidence and diagnosis
+      const sorted = Array.isArray(predictionData) && predictionData.length
+        ? [...predictionData].sort((a, b) => b[1] - a[1])
+        : [];
+
+      const topK = sorted.slice(0, 3);
+      const topSymptoms = symptoms.length ? symptoms : topK.map(([cond]) => cond);
+      const [bestCond, bestScore] = sorted.length ? sorted[0] : [disease, 1];
+
+      const specialtyMap = {
+        Diabetes: 'Endocrinologist',
+        Pneumonia: 'Pulmonologist',
+        Depression: 'Psychiatrist',
+        'Heart Disease': 'Cardiologist',
+        'Pleural Effusion': 'Pulmonologist',
+      };
+
+      const specialty = specialtyMap[bestCond] || 'General Physician';
+
+      const formattedReport = {
+        symptoms: topSymptoms,
+        diagnosis: disease || bestCond,
+        confidence: Math.round((bestScore || 1) * 100),
+        recommendations: [
+          `Consult a ${specialty}`,
+          'Follow a healthy lifestyle',
+          'Get relevant tests done',
+        ],
+        suggested_tests: ['Blood Test', 'Imaging', 'Consultation'],
+        specialty,
+        timestamp: new Date().toISOString(),
+        report: reportText,
+      };
+
+      setReportData(formattedReport);
+      setLoading(false);
+      return;
+    }
+
+    // Fallback: if no processedData, fetch from API as before
+    if (!cleanType) {
+      setError('No image type specified and no data passed.');
+      setLoading(false);
+      return;
+    }
+
+    const fetchReport = async () => {
       try {
-        const res = await fetch(`${BASE_API_URL}/get_latest_results/`);
-        if (!res.ok) throw new Error('Network response was not ok');
-        const data = await res.json();
+        const [predictionRes, reportRes] = await Promise.all([
+          fetch(`${BASE_API_URL}/predict/${cleanType}/`),
+          fetch(`${BASE_API_URL}/generate-report/${cleanType}/`),
+        ]);
 
-        const entries = Object.entries(data || {});
-        if (entries.length === 0) {
-          setReportData({
-            symptoms: [],
-            diagnosis: 'No conditions detected.',
-            confidence: 0,
-            recommendations: ['Maintain regular checkups'],
-            suggested_tests: [],
-            specialty: 'General Physician',
-            timestamp: new Date().toISOString(),
-          });
-        } else {
-          const sorted = entries.sort((a, b) => b[1] - a[1]);
-          const topK = sorted.slice(0, 3);
-          const symptoms = topK.map(([cond]) => cond);
-          const [bestCond, bestScore] = sorted[0];
-
-          // Simple specialty matching logic (can be refined)
-          const specialtyMap = {
-            Diabetes: 'Endocrinologist',
-            Pneumonia: 'Pulmonologist',
-            Depression: 'Psychiatrist',
-            'Heart Disease': 'Cardiologist',
-          };
-
-          const specialty = specialtyMap[bestCond] || 'General Physician';
-
-          setReportData({
-            symptoms,
-            diagnosis: bestCond,
-            confidence: Math.round(bestScore * 100),
-            recommendations: [
-              `Consult a ${specialty}`,
-              'Follow a healthy lifestyle',
-              'Get relevant tests done'
-            ],
-            suggested_tests: ['Blood Test', 'Imaging', 'Consultation'],
-            specialty,
-            timestamp: new Date().toISOString(),
-          });
+        if (!predictionRes.ok || !reportRes.ok) {
+          throw new Error('One of the API calls failed');
         }
+
+        const predictionData = await predictionRes.json();
+        const reportDataRaw = await reportRes.json();
+
+        const sorted = predictionData.predictions.sort((a, b) => b[1] - a[1]);
+        const topK = sorted.slice(0, 3);
+        const symptoms = topK.map(([cond]) => cond);
+        const [bestCond, bestScore] = sorted[0];
+
+        const specialtyMap = {
+          Diabetes: 'Endocrinologist',
+          Pneumonia: 'Pulmonologist',
+          Depression: 'Psychiatrist',
+          'Heart Disease': 'Cardiologist',
+          'Pleural Effusion': 'Pulmonologist',
+        };
+
+        const specialty = specialtyMap[bestCond] || 'General Physician';
+
+        const formattedReport = {
+          symptoms,
+          diagnosis: reportDataRaw.disease || bestCond,
+          confidence: Math.round(bestScore * 100),
+          recommendations: [
+            `Consult a ${specialty}`,
+            'Follow a healthy lifestyle',
+            'Get relevant tests done',
+          ],
+          suggested_tests: ['Blood Test', 'Imaging', 'Consultation'],
+          specialty,
+          timestamp: new Date().toISOString(),
+          report: reportDataRaw.report || '',
+        };
+
+        setReportData(formattedReport);
       } catch (err) {
         console.error(err);
         setError('Failed to load report. Please try again.');
@@ -64,14 +123,12 @@ const ResultsPage = () => {
       }
     };
 
-    fetchData();
-  }, []);
+    fetchReport();
+  }, [cleanType, processedData]);
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-slate-500 min-h-screen">
-        Loading report...
-      </div>
+      <div className="p-6 text-center text-slate-500 min-h-screen">Loading report...</div>
     );
   }
 
@@ -85,7 +142,6 @@ const ResultsPage = () => {
 
   return (
     <div className="p-6 min-h-screen space-y-6 max-w-4xl mx-auto">
-
       <div id="report-content">
         <ReportCard report={reportData} />
       </div>

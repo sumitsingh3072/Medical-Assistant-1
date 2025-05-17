@@ -32,64 +32,78 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
     reader.readAsDataURL(selectedFile);
   };
 
-  const BASE_API_URL = 'http://127.0.0.1:8000/predict/';
+  const BASE_API_URL = 'http://127.0.0.1:8000';
 
-const handleUpload = async () => {
-  if (!file) {
-    setError('Please select a file first.');
-    return;
-  }
+  const handleUpload = async () => {
+    if (!file) return setError('Please select a file first.');
+    if (!selectedImageType) return setError('Please select an image type first.');
 
-  if (!selectedImageType) {
-    setError('Please select an image type first.');
-    return;
-  }
+    let predictionEndpoint = '';
+    let reportEndpoint = '';
+    try {
+      const cleanType = selectedImageType.includes('_')
+        ? selectedImageType.split('_')[0]
+        : selectedImageType;
 
-  const endpointMap = {
-    xray: `${BASE_API_URL}xray/`,
-    mri: `${BASE_API_URL}mri/`,
-    ct_scan: `${BASE_API_URL}ct/`,
-    ultrasound: `${BASE_API_URL}ultrasound/`,
+      predictionEndpoint = `${BASE_API_URL}/predict/${cleanType}/`;
+      reportEndpoint = `${BASE_API_URL}/generate-report/${cleanType}/`;
+    } catch (err) {
+      return setError('Invalid image type format.');
+    }
+
+    try {
+      setUploading(true);
+      setError(null);
+      setUploadProgress(0);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // First Request: Prediction
+      const predictionRes = await axios.post(predictionEndpoint, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      });
+
+      // Second Request: Report generation
+      const reportRes = await axios.post(reportEndpoint, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Combine results
+      setProcessedData({
+        predictions: predictionRes.data.predictions,
+        report: reportRes.data.report,
+        disease: reportRes.data.disease,
+        symptoms: reportRes.data.symptoms,
+        imagePreview: preview,
+        imageType: selectedImageType
+      });
+
+      navigate('/results', {
+  state: {
+    selectedImageType,
+    processedData: {
+      predictions: predictionRes.data.predictions,
+      report: reportRes.data.report,
+      disease: reportRes.data.disease,
+      symptoms: reportRes.data.symptoms,
+      imagePreview: preview,
+    },
+  },
+});
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred during upload or analysis. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
-
-  const endpoint = endpointMap[selectedImageType];
-  if (!endpoint) {
-    setError('No endpoint defined for selected image type.');
-    return;
-  }
-
-  try {
-    setUploading(true);
-    setError(null);
-    setUploadProgress(0);
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('imageType', selectedImageType);
-
-    const response = await axios.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        setUploadProgress(percentCompleted);
-      },
-    });
-
-    setProcessedData(response.data);
-    navigate('/results');
-  } catch (err) {
-    console.error(err);
-    setError('An error occurred during upload. Please try again.');
-  } finally {
-    setUploading(false);
-  }
-};
-
-
 
   return (
     <Card className="w-full shadow-md min-h-screen">
@@ -191,7 +205,7 @@ const handleUpload = async () => {
         {uploading && (
           <div className="space-y-2 mt-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500">Uploading & processing...</span>
+              <span className="text-sm text-slate-500">Uploading & analyzing...</span>
               <span className="text-sm font-medium">{uploadProgress}%</span>
             </div>
             <Progress value={uploadProgress} className="h-2" />
