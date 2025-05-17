@@ -35,91 +35,87 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
   const BASE_API_URL = 'http://127.0.0.1:8000';
 
   const handleUpload = async () => {
-    if (!file) return setError('Please select a file first.');
-    if (!selectedImageType) return setError('Please select an image type first.');
+  if (!file) return setError('Please select a file first.');
+  if (!selectedImageType) return setError('Please select an image type first.');
 
-    let predictionEndpoint = '';
-let reportEndpoint = '';
+  let predictionEndpoint = '';
+  let reportEndpoint = '';
 
-try {
-  const parts = selectedImageType.split('_');
-  const modality = parts[0].toLowerCase(); // e.g., ct, xray
-  const subtype = parts[1]?.toLowerCase(); // e.g., 2d, 3d
-
-  if (modality === 'xray') {
-    predictionEndpoint = `${BASE_API_URL}/predict/xray/`;
-    reportEndpoint = subtype
-      ? `${BASE_API_URL}/generate-report/xray/${subtype}/`
-      : `${BASE_API_URL}/generate-report/xray/`;
-  } else {
-    reportEndpoint = subtype
-      ? `${BASE_API_URL}/generate-report/${modality}/${subtype}/`
-      : `${BASE_API_URL}/generate-report/${modality}/`;
-  }
-} catch (err) {
-  return setError('Invalid image type format.');
-}
-
-
-
-
-    try {
-      setUploading(true);
-      setError(null);
-      setUploadProgress(0);
-
-      const formData = new FormData();
-formData.append('file', file);
-
-let predictionRes = { data: { predictions: [] } };
-
-// For xray, do prediction first
-if (predictionEndpoint) {
-  predictionRes = await axios.post(predictionEndpoint, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: (progressEvent) => {
-      const percentCompleted = Math.round(
-        (progressEvent.loaded * 100) / progressEvent.total
-      );
-      setUploadProgress(percentCompleted);
-    },
-  });
-}
-
-const reportRes = await axios.post(reportEndpoint, formData, {
-  headers: { 'Content-Type': 'multipart/form-data' }
-});
-
-
-      // Combine results
-      setProcessedData({
-        predictions: predictionRes.data.predictions,
-        report: reportRes.data.report,
-        disease: reportRes.data.disease,
-        symptoms: reportRes.data.symptoms,
-        imagePreview: preview,
-        imageType: selectedImageType
-      });
-
-      navigate('/results', {
-  state: {
-    selectedImageType,
-    processedData: {
-      predictions: predictionRes.data.predictions,
-      report: reportRes.data.report,
-      disease: reportRes.data.disease,
-      symptoms: reportRes.data.symptoms,
-      imagePreview: preview,
-    },
-  },
-});
-    } catch (err) {
-      console.error(err);
-      setError('An error occurred during upload or analysis. Please try again.');
-    } finally {
-      setUploading(false);
+  try {
+    if (selectedImageType === 'xray') {
+      predictionEndpoint = `${BASE_API_URL}/predict/xray/`;
+      reportEndpoint = `${BASE_API_URL}/generate-report/xray/`;
+    } else if (selectedImageType === 'ct_2d') {
+      predictionEndpoint = `${BASE_API_URL}/predict/ct/2d/`;
+      reportEndpoint = '';  // Not needed separately — prediction includes report
+    } else if (selectedImageType === 'ct_3d') {
+      predictionEndpoint = `${BASE_API_URL}/predict/ct/3d/`;
+      reportEndpoint = '';  // Same — prediction handles everything
+    } else {
+      return setError('Unsupported image type selected.');
     }
-  };
+  } catch (err) {
+    return setError('Invalid image type format.');
+  }
+
+  try {
+    setUploading(true);
+    setError(null);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const predictionRes = await axios.post(predictionEndpoint, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      },
+    });
+
+    // Call report API only for XRAY (others include it in prediction)
+    let reportData = {};
+    if (selectedImageType === 'xray') {
+      const reportRes = await axios.post(reportEndpoint, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      reportData = reportRes.data;
+    } else {
+      reportData = predictionRes.data;
+    }
+
+    setProcessedData({
+      predictions: predictionRes.data.predictions || null,
+      report: reportData.report,
+      disease: reportData.disease,
+      symptoms: reportData.symptoms || [],
+      imagePreview: preview,
+      imageType: selectedImageType
+    });
+
+    navigate('/results', {
+      state: {
+        selectedImageType,
+        processedData: {
+          predictions: predictionRes.data.predictions || null,
+          report: reportData.report,
+          disease: reportData.disease,
+          symptoms: reportData.symptoms || [],
+          imagePreview: preview,
+        },
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    setError('An error occurred during upload or analysis. Please try again.');
+  } finally {
+    setUploading(false);
+  }
+};
+
 
   return (
     <Card className="w-full shadow-md min-h-screen">
