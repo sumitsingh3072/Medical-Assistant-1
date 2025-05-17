@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
+import { pdf } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import ReportPDF from "./components/ReportPDF"
 
 import {
   Card,
@@ -40,37 +41,9 @@ const ReportCard = ({ reportData }) => {
   }
 
   const handleDownload = async () => {
-    const input = cardRef.current
-    const canvas = await html2canvas(input, { scale: 2 })
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF('p', 'mm', 'a4')
-    const imgProps = pdf.getImageProperties(imgData)
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
-
-    // Add Logo/Header
-    const logo = new Image()
-    logo.src = '/logo.png' // Place your logo in the public folder
-    logo.onload = () => {
-      pdf.addImage(logo, 'PNG', 10, 10, 30, 10)
-      pdf.setFontSize(14)
-      pdf.text('MediVision AI — Diagnostic Report', 50, 17)
-
-      // Add the main content
-      pdf.addImage(imgData, 'PNG', 10, 30, pdfWidth - 20, pdfHeight)
-
-      // Optional watermark
-      pdf.setTextColor(150)
-      pdf.setFontSize(30)
-      pdf.text('Confidential', pdfWidth / 2, pdfHeight + 60, {
-        angle: 45,
-        align: 'center',
-        opacity: 0.1
-      })
-
-      pdf.save('diagnostic-report.pdf')
-    }
-  }
+    const blob = await pdf(<ReportPDF reportData={reportData} />).toBlob();
+    saveAs(blob, 'diagnostic-report.pdf');
+  };
 
   const handlePrint = () => window.print()
 
