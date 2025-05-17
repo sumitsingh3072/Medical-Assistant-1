@@ -1,70 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import ReportCard from './ReportCard';
-
+import { Input } from './components/ui/input';
+import { Button } from './components/ui/button';
+import { Card, CardHeader, CardContent, CardTitle } from './components/ui/card';
+import axios from 'axios';
 
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
-const ResultsPage = () => {
-  const [rawResults, setRawResults] = useState(null);
-  const [reportData, setReportData] = useState(null);
-  const [error, setError] = useState(null);
+const DoctorSearchPage = () => {
+  const [location, setLocation] = useState('');
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  // Auto-detect location using Geolocation API
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${BASE_API_URL}/get_latest_results/`);
-        if (!res.ok) throw new Error('Network response was not ok');
-        const data = await res.json();
-        setRawResults(data);
-
-        const entries = Object.entries(data);
-        if (entries.length === 0) {
-          setReportData({
-            symptoms: [],
-            report: 'No conditions detected.',
-            confidence: 0,
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
+            params: {
+              lat: latitude,
+              lon: longitude,
+              format: 'json',
+            },
           });
-          return;
+          const city = res.data.address?.city || res.data.address?.town || res.data.address?.village || '';
+          if (city) setLocation(city);
+        } catch (err) {
+          console.warn('Geolocation reverse lookup failed:', err);
         }
-
-        const sorted = entries.sort((a, b) => b[1] - a[1]);
-        const topK = sorted.slice(0, 3);
-        const symptoms = topK.map(([cond]) => cond);
-        const [bestCond, bestScore] = sorted[0];
-        const report = `Most likely condition is ${bestCond}.`;
-        const confidence = Math.round(bestScore * 100);
-
-        setReportData({ symptoms, report, confidence });
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load report. Please try again.');
-      }
-    };
-
-    fetchData();
+      });
+    }
   }, []);
 
-  if (error) {
-    return (
-      <div className="p-6 text-center text-2xl text-red-600 opacity-60 min-h-screen">
-        {error}😢
-      </div>
-    );
-  }
-
-  if (!reportData) {
-    return (
-      <div className="p-6 text-center text-slate-500 min-h-screen">
-        Loading report...
-      </div>
-    );
-  }
+  const handleSearch = async () => {
+    if (!location) return;
+    setLoading(true);
+    try {
+      const res = await axios.get(`${BASE_API_URL}/api/search-doctors`, {
+        params: { location },
+      });
+      setDoctors(res.data.results || []);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="p-6 min-h-screen space-y-6 bg-zinc-200 dark:bg-black">
-      <ReportCard reportData={reportData} />
+    <div className="p-6 max-w-3xl mx-auto space-y-4 ">
+      <Card>
+        <CardHeader>
+          <CardTitle>Find a Nearby Doctor</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter your location (e.g. Delhi)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+            <Button onClick={handleSearch} disabled={loading}>
+              {loading ? 'Searching...' : 'Search'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {doctors.length > 0 && (
+        <div className="space-y-3">
+          {doctors.map((doc, idx) => (
+            <Card key={idx} className="p-4">
+              <h4 className="font-semibold text-lg">{doc.name}</h4>
+              <p className="text-sm text-muted-foreground">{doc.specialty} - {doc.location}</p>
+              <a
+                href={`tel:${doc.phone}`}
+                className="mt-2 inline-block text-blue-600 hover:underline"
+              >
+                Call: {doc.phone}
+              </a>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
-export default ResultsPage;
+export default DoctorSearchPage;

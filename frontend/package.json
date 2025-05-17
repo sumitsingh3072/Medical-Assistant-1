@@ -28,10 +28,12 @@
     "file-saver": "^2.0.5",
     "framer-motion": "^12.12.1",
     "html2pdf.js": "^0.10.3",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.509.0",
     "motion": "^12.12.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.6.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7"
