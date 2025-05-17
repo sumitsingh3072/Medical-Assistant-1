@@ -13,6 +13,10 @@ from typing import List, Tuple
 from dotenv import load_dotenv
 import io
 import re
+import numpy as np
+import nibabel as nib
+from PIL import Image
+from nibabel.loadsave import load
 
 
 # Load environment variables
@@ -21,13 +25,14 @@ load_dotenv()
 # Import your ML model functions for each modality
 from services.xray_service import process_xray, init_xray_model
 # Uncomment when available:
-# from services.ct_service import process_ct, init_ct_model
+from services.ct_service import process_ct, init_ct_models
 # from services.ultrasound_service import process_ultrasound, init_ultrasound_model
 # from services.mri_service import process_mri, init_mri_model
 
 # Initialize Google GenAI Client (multimodal)
 # pip install google-genai
 from google import genai
+from google.genai.types import Part
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Global: store latest predictions for frontend polling
@@ -38,7 +43,7 @@ latest_reports = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_xray_model()
-    # init_ct_model()
+    init_ct_models()
     # init_ultrasound_model()
     # init_mri_model()
     yield
@@ -87,7 +92,28 @@ PROMPT_TEMPLATES = {
         "provide a structured radiology report including findings, impression, and recommendations."
     ),
     "ct": (
-        "You are a radiology report assistant specialized in interpreting CT scans. "
+        '''
+        You are a medical AI assistant specialized in interpreting 3D and 2D CT scan results. 
+        Given a set of AI-generated confidence scores for tumor detection, your task is to:
+
+        1. Identify whether a tumor or no tumor is more likely based on the highest confidence score.
+        2. Clearly mention the detected condition and the confidence score as a percentage (e.g., 92.00%).
+        3. Explain what this result means for the patient in clear, simple language.
+        4. Describe briefly how 3D CT scans assist in detecting tumors by providing detailed cross-sectional views of the body.
+        5. Recommend possible next steps such as further imaging or biopsy for confirmation.
+        6. End with a disclaimer stating that this is an AI-generated preliminary result and must be verified by a certified medical professional.
+        7. Do not begin with "Based on the image and the patient symptoms" or any other introductory phrase.
+        8. Report size should be always between 200 and 300 words.
+        9. Use the following format for the output:
+
+        """
+        Output example 
+        Condition Detected: Tumor
+        The AI analysis of your 3D CT scan of the brain indicates a high probability of a tumor, with a confidence score of 92.00%. This suggests there may be an abnormal mass or growth
+        present in the scanned region. 3D CT scans allow doctors to view detailed cross-sectional images of internal tissues, making it easier to identify potential issues like 
+        tumors. While this result is a strong indicator, it is not a confirmed diagnosis. Further testing, such as an MRI or biopsy, may be required. 
+        Disclaimer: This is an AI-generated summary. Please consult a certified doctor or radiologist for medical confirmation and advice.
+        '''
         "Based on the image and the patient symptoms: {symptoms}, "
         "produce a detailed CT scan report including observations, differential diagnoses, and next steps."
     ),
@@ -113,7 +139,7 @@ def extract_top_symptoms(predictions: List[Tuple[str, float]], top_k: int = 3) -
     return [label for label, _ in sorted_preds[:top_k]]
 
 # Generate report using multimodal Gemini
-def generate_medical_report(symptoms: List[str], image_bytes: bytes, modality: str, mime_type: str = "image/png") -> str:
+def generate_medical_report(symptoms: List[str], image_bytes: bytes, modality: str, mime_type: Optional[str] = None) -> str:
     # Prepare prompt
     template = PROMPT_TEMPLATES.get(modality.lower(), FALLBACK_TEMPLATE)
     prompt = template.format(symptoms=", ".join(symptoms))
@@ -123,13 +149,22 @@ def generate_medical_report(symptoms: List[str], image_bytes: bytes, modality: s
     #     "Include possible diagnoses, recommended next steps, and any relevant notes."
     # )
     # Wrap image bytes in Part for multimodal input
-    from google.genai.types import Part
-    image_part = Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    
+
+    contents = []
+    # Only wrap image if we actually have bytes and a valid mime_type
+    if image_bytes is not None and mime_type and mime_type.startswith("image/"):
+        from google.genai.types import Part
+        image_part = Part.from_bytes(data=image_bytes, mime_type=mime_type)
+        contents.append(image_part)
+
+    # Always add the prompt
+    contents.append(prompt)
 
     # Generate content with image part and prompt
     response = client.models.generate_content(
         model="models/gemini-2.0-flash",
-        contents=[image_part, prompt]
+        contents=contents
     )
     if not response or not hasattr(response, 'text') or response.text is None:
         raise HTTPException(status_code=500, detail="Empty response from Gemini API.")
@@ -162,6 +197,8 @@ async def get_latest_results():
     if not latest_xray_results:
         return {"message": "No prediction results available yet."}
     return latest_xray_results
+
+
 @app.post("/generate-report/{modality}/")
 async def generate_report(
     modality: str = Path(..., description="One of: xray, ct, ultrasound, mri"),
@@ -216,6 +253,156 @@ async def get_latest_report(modality: str = Path(...)):
     if modality not in latest_reports:
         raise HTTPException(status_code=404, detail="No report available for this modality.")
     return latest_reports[modality]
+
+
+# CT 2D and 3D routes
+@app.post("/predict/ct/2d/")
+async def generate_report_ct2d(file: UploadFile = File(...)):
+    modality = "ct"
+    mode = "2d"
+
+    # Only allow image files for 2D slices
+    if file.content_type not in ["image/jpeg", "image/png", "image/bmp"]:
+        raise HTTPException(status_code=400, detail="Unsupported file type for CT2D.")
+
+    temp_path = f"temp_ct2d_{file.filename}"
+    with open(temp_path, "wb") as buf:
+        shutil.copyfileobj(file.file, buf)
+
+    try:
+        # Inference
+        raw_preds = process_ct(temp_path, mode=mode, device="cpu")
+        symptoms = extract_top_symptoms(raw_preds)
+
+        # Read image bytes before deleting temp
+        with open(temp_path, "rb") as f:
+            img_bytes = f.read()
+        os.remove(temp_path)
+
+        # Generate report using correct MIME type
+        report = generate_medical_report(
+            symptoms, img_bytes, modality=modality, mime_type=file.content_type
+        )
+
+        # Extract disease
+        match = re.search(r"Condition Detected:\s*(.+)", report)
+        disease = match.group(1).strip() if match else "Unknown"
+
+        # Store
+        latest_reports["ct2d"] = {
+            "symptoms": symptoms,
+            "disease": disease,
+            "report": report
+        }
+
+        return JSONResponse({
+            "symptoms": symptoms,
+            "disease": disease,
+            "report": report
+        })
+
+    except HTTPException:
+        if os.path.exists(temp_path): os.remove(temp_path)
+        raise
+    except Exception as e:
+        if os.path.exists(temp_path): os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+## 3d route 
+@app.post("/predict/ct/3d/")
+async def generate_report_ct3d(file: UploadFile = File(...)):
+    # 1) Save upload to disk
+    temp_path = f"temp_ct3d_{file.filename}"
+    with open(temp_path, "wb") as buf:
+        shutil.copyfileobj(file.file, buf)
+
+    try:
+        # 2) Run your 3D model to get symptoms label(s)
+        raw_preds = process_ct(temp_path, mode="3d", device="cpu")
+        label, prob = raw_preds[0]
+        symptoms = [label]
+
+        # 3) Load volume and pick mid-slices
+        img = load(temp_path)
+        vol = img.get_fdata() #type: ignore
+        z, y, x = [d // 2 for d in vol.shape]
+        slices = {
+            "axial":   vol[z, :, :],
+            "coronal": vol[:, y, :],
+            "sagittal":vol[:, :, x],
+        }
+
+        # 4) Convert each slice to PNG bytes
+        image_parts = []
+        for name, sl in slices.items():
+            # normalize slice to [0,255]
+            sl_norm = ((sl - sl.min())/(sl.max()-sl.min()) * 255).astype(np.uint8)
+            pil = Image.fromarray(sl_norm).convert("L").resize((224,224))
+            buf = io.BytesIO()
+            pil.save(buf, format="PNG")
+            image_parts.append(Part.from_bytes(data=buf.getvalue(), mime_type="image/png"))
+
+        os.remove(temp_path)
+
+        # 5) Build prompt & send all three images + prompt
+        prompt = (
+        '''
+        You are a medical AI assistant specialized in interpreting 3D and 2D CT scan results. 
+        Given a set of AI-generated confidence scores for tumor detection, your task is to:
+
+        1. Identify whether a tumor or no tumor is more likely based on the highest confidence score.
+        2. Clearly mention the detected condition and the confidence score as a percentage (e.g., 92.00%).
+        3. Explain what this result means for the patient in clear, simple language.
+        4. Describe briefly how 3D CT scans assist in detecting tumors by providing detailed cross-sectional views of the body.
+        5. Recommend possible next steps such as further imaging or biopsy for confirmation.
+        6. End with a disclaimer stating that this is an AI-generated preliminary result and must be verified by a certified medical professional.
+        7. Do not begin with "Based on the image and the patient symptoms" or any other introductory phrase.
+        8. Report size should be always between 200 and 300 words.
+        9. Use the following format for the output:
+
+        Output example 
+        Condition Detected: Tumor
+        The AI analysis of your 3D CT scan of the brain indicates a high probability of a tumor, with a confidence score of 92.00%. This suggests there may be an abnormal mass or growth
+        present in the scanned region. 3D CT scans allow doctors to view detailed cross-sectional images of internal tissues, making it easier to identify potential issues like 
+        tumors. While this result is a strong indicator, it is not a confirmed diagnosis. Further testing, such as an MRI or biopsy, may be required. 
+        Disclaimer: This is an AI-generated summary. Please consult a certified doctor or radiologist for medical confirmation and advice.
+        '''
+        )
+
+        response = client.models.generate_content(
+            model="models/gemini-2.0-flash",
+            contents=[*image_parts, prompt]
+        )
+        report = response.text or "<empty>"
+        match = re.search(r"Condition Detected:\s*(.+)", report)
+        disease = match.group(1).strip() if match else "Unknown"
+
+        # 6) Store & return
+        latest_reports["ct3d"] = {
+            "Symptom": label,
+            "disease": disease,
+            "report": report
+        }
+        return JSONResponse(latest_reports["ct3d"])
+
+    except Exception as e:
+        if os.path.exists(temp_path): os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/predict/ct/2d/")
+async def get_latest_report_ct2d():
+    if "ct2d" not in latest_reports:
+        raise HTTPException(status_code=404, detail="No 2D CT report available.")
+    return latest_reports["ct2d"]
+
+@app.get("/predict/ct/3d/")
+async def get_latest_report_ct3d():
+    if "ct3d" not in latest_reports:
+        raise HTTPException(status_code=404, detail="No 3D CT report available.")
+    return latest_reports["ct3d"]
 
 # Mock database of doctors
 class Doctor(BaseModel):
@@ -293,3 +480,4 @@ async def search_doctors(
             enriched_doctors.append({**doc, "lat": lat, "lng": lng})
 
     return enriched_doctors
+# @app.get("/api/get-doctor/{doctor_id}", response_model=Doctor)

@@ -158,4 +158,6 @@ def predict_ct(model, image_path, mode="2d", device="cpu",
         ]
     else:
         # 2D: keep full distribution
-        return [(classes[i], float(probs[i])) for i in range(len(classes))]
+        # When returning only top prediction
+        return [(classes[np.argmax(probs)], float(np.max(probs)))]
+
