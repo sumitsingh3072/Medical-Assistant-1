@@ -1,12 +1,12 @@
 # backend/models/ct_model.py
 
+import os
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
-from nibabel.loadsave import load as load_nifti  # explicit import for NIfTI loading
+from nibabel.loadsave import load as load_nifti
 import numpy as np
-import os
 
 # ---------------------------
 # 2D Model: ResNet-based
@@ -29,7 +29,7 @@ ct_transforms_2d = transforms.Compose([
 ])
 
 # ---------------------------
-# 3D Model: Placeholder for MedicalNet
+# 3D Model: Simple Conv3D + Pool
 # ---------------------------
 class CTNet3D(nn.Module):
     def __init__(self, num_classes=2):
@@ -47,33 +47,86 @@ class CTNet3D(nn.Module):
         return self.fc(x)
 
 # ---------------------------
+# Direct absolute paths to your checkpoint files
+# ---------------------------
+CT_2D_WEIGHTS_PATH = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\ct\2d\ResNet50.pt"
+CT_3D_WEIGHTS_PATH = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\ct\3d\resnet_200.pth"
+
+# ---------------------------
+# Hounsfield Unit windowing
+# ---------------------------
+def window_and_normalize(volume: np.ndarray,
+                         hu_min: int = -150,
+                         hu_max: int = 350) -> np.ndarray:
+    """
+    Clip the volume to [hu_min, hu_max] and normalize to [0,1].
+    """
+    vol = np.clip(volume, hu_min, hu_max)
+    vol = (vol - hu_min) / (hu_max - hu_min)
+    return vol
+
+# ---------------------------
+# 3D Volume Preprocessing
+# ---------------------------
+def preprocess_ct_3d(volume: np.ndarray) -> np.ndarray:
+    # Apply HU windowing & normalization
+    vol = window_and_normalize(volume,
+                               hu_min=-150,
+                               hu_max=350)
+    # Resize to fixed shape (D,H,W) = (64,224,224)
+    vol_resized = np.resize(vol, (64, 224, 224))
+    return vol_resized
+
+# ---------------------------
 # Load Model Dispatcher
 # ---------------------------
 def load_ct_model(mode="2d", device="cpu"):
-    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model_assets', 'ct'))
     if mode == "2d":
         model = CTNet2D()
-        weights_path = os.path.join(assets_dir, "resnet_ct_2d.pth")
+        weights_path = CT_2D_WEIGHTS_PATH
     elif mode == "3d":
         model = CTNet3D()
-        weights_path = os.path.join(assets_dir, "resnet_ct_3d.pth")
+        weights_path = CT_3D_WEIGHTS_PATH
     else:
         raise ValueError("Mode must be '2d' or '3d'.")
 
     if not os.path.exists(weights_path):
         raise FileNotFoundError(f"CT weights not found at {weights_path}")
+
     checkpoint = torch.load(weights_path, map_location=device)
-    state_dict = checkpoint.get('state_dict', checkpoint)
-    clean_state = {k.replace('module.', ''): v for k, v in state_dict.items()}
-    model.load_state_dict(clean_state)
+    raw_sd = checkpoint.get('state_dict', checkpoint)
+
+    clean_sd = {}
+    for k, v in raw_sd.items():
+        nk = k.replace('module.', '')
+        if mode == "2d":
+            # remap 2D backbone keys under self.model
+            if nk.startswith("backbone."):
+                nk2 = nk.replace("backbone.", "model.")
+            else:
+                nk2 = "model." + nk
+        else:
+            nk2 = nk
+        clean_sd[nk2] = v
+
+    model.load_state_dict(clean_sd, strict=False)
     model.to(device)
     model.eval()
     return model
 
 # ---------------------------
-# Prediction Dispatcher
+# Prediction Dispatcher with decision threshold
 # ---------------------------
-def predict_ct(model, image_path, mode="2d", device="cpu"):
+def predict_ct(model, image_path, mode="2d", device="cpu",
+               thresh_low: float = 0.35,
+               thresh_high: float = 0.65):
+    """
+    For 2D: returns list of (class, prob).
+    For 3D: applies HU windowing, predicts, then classifies:
+      prob_tumor > thresh_high    => 'Tumor'
+      prob_tumor < thresh_low     => 'No Tumor'
+      otherwise                   => 'Indeterminate'
+    """
     if mode == "2d":
         image = Image.open(image_path).convert("RGB")
         input_tensor = ct_transforms_2d(image).unsqueeze(0).to(device)
@@ -90,12 +143,19 @@ def predict_ct(model, image_path, mode="2d", device="cpu"):
         probs = torch.softmax(output, dim=1).squeeze().cpu().numpy()
 
     classes = ["No Tumor", "Tumor"]
-    return [(classes[i], float(probs[i])) for i in range(len(classes))]
 
-# ---------------------------
-# 3D Volume Preprocessing
-# ---------------------------
-def preprocess_ct_3d(volume):
-    volume = (volume - np.min(volume)) / (np.max(volume) - np.min(volume))
-    volume = np.resize(volume, (64, 224, 224))
-    return volume
+    if mode == "3d":
+        prob_no, prob_tumor = float(probs[0]), float(probs[1])
+        if prob_tumor >= thresh_high:
+            label = "Tumor"
+        elif prob_tumor <= thresh_low:
+            label = "No Tumor"
+        else:
+            label = "Indeterminate"
+        return [("No Tumor", prob_no),
+        ("Tumor", prob_tumor),
+        ("Label", label)
+        ]
+    else:
+        # 2D: keep full distribution
+        return [(classes[i], float(probs[i])) for i in range(len(classes))]
