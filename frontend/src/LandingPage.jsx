@@ -21,6 +21,7 @@ import { Feedback } from './components/FeedBackCard';
 import Testimonials from './components/Testimonials';
 import { ScratchToReveal } from "./components/magicui/scratch-to-reveal";
 import FaqSection from './components/FaqSection';
+import PrivacySection from './components/PrivacySection';
 
 const LandingPage = () => {
   return (
@@ -172,6 +173,11 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* security claim */}
+      <section className='mx-auto py-16 w-full px-2 md:px-44 bg-white dark:bg-zinc-950'>
+        <PrivacySection/>
+      </section>
+
       {/* CTA Section */}
       <section className=" bg-white dark:bg-zinc-950">
         <div className="relative flex h-[500px] w-full flex-col items-center justify-center overflow-hidden rounded-lg bg-background">
@@ -198,6 +204,7 @@ const LandingPage = () => {
         </div>
 
       </section>
+
 
       {/* Contact Section */}
       <section className="py-16 px-4 md:px-96 flex items-center justify-between bg-white dark:bg-zinc-950 transition-colors gap-2">
@@ -229,7 +236,7 @@ const LandingPage = () => {
       className="flex items-center justify-center overflow-hidden rounded-2xl border-2 bg-gray-100"
       gradientColors={["#A97CF8", "#F38CB8", "#FDCC92"]}
     >
-      <p className="text-9xl">😎</p>
+      <p className="text-9xl">⚕️</p>
     </ScratchToReveal>
         </div>
       </section>
