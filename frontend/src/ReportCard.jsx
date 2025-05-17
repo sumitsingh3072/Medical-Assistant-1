@@ -1,67 +1,93 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+
 import {
-  Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle
-} from './components/ui/card';
-import { Button } from './components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
-import { Badge } from './components/ui/badge';
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+} from './components/ui/card'
+import { Badge } from './components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs"
+import { Button } from './components/ui/button'
+import { Download, Printer, Share2, Check, AlertTriangle, FileText } from 'lucide-react'
 import {
-  AlertTriangle, Check, FileText, Download, Share2, Printer
-} from 'lucide-react';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
-} from './components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from './components/ui/dialog'
 
 const ReportCard = ({ reportData }) => {
-  const { symptoms = [], report = '', confidence = 0 } = reportData || {};
-  const [openDialog, setOpenDialog] = useState(false);
-  const cardRef = useRef(null);
+  const { symptoms = [], report = '', confidence = 0 } = reportData || {}
+  const cardRef = useRef(null)
+  const [openDialog, setOpenDialog] = useState(false)
 
   const getConfidenceColor = (score) => {
-    if (score >= 85) return 'text-green-600';
-    if (score >= 70) return 'text-amber-600';
-    return 'text-red-600';
-  };
+    if (score >= 85) return 'text-green-600'
+    if (score >= 70) return 'text-amber-600'
+    return 'text-red-600'
+  }
 
   const getConfidenceBadge = (score) => {
-    if (score >= 85) return 'bg-green-100 text-green-800 border-green-200';
-    if (score >= 70) return 'bg-amber-100 text-amber-800 border-amber-200';
-    return 'bg-red-100 text-red-800 border-red-200';
-  };
+    if (score >= 85) return 'bg-green-100 text-green-800 border-green-200'
+    if (score >= 70) return 'bg-amber-100 text-amber-800 border-amber-200'
+    return 'bg-red-100 text-red-800 border-red-200'
+  }
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handleDownload = async () => {
+    const input = cardRef.current
+    const canvas = await html2canvas(input, { scale: 2 })
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const imgProps = pdf.getImageProperties(imgData)
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
 
-  const handleDownload = () => {
-    const element = document.createElement("a");
-    const content = `
-      Report Summary:\n${report}\n\n
-      Confidence: ${confidence}%\n
-      Symptoms: ${symptoms.join(', ')}\n
-      Date: ${new Date().toLocaleString()}
-    `;
-    const file = new Blob([content], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = "report-summary.txt";
-    document.body.appendChild(element);
-    element.click();
-  };
+    // Add Logo/Header
+    const logo = new Image()
+    logo.src = '/logo.png' // Place your logo in the public folder
+    logo.onload = () => {
+      pdf.addImage(logo, 'PNG', 10, 10, 30, 10)
+      pdf.setFontSize(14)
+      pdf.text('MediVision AI — Diagnostic Report', 50, 17)
+
+      // Add the main content
+      pdf.addImage(imgData, 'PNG', 10, 30, pdfWidth - 20, pdfHeight)
+
+      // Optional watermark
+      pdf.setTextColor(150)
+      pdf.setFontSize(30)
+      pdf.text('Confidential', pdfWidth / 2, pdfHeight + 60, {
+        angle: 45,
+        align: 'center',
+        opacity: 0.1
+      })
+
+      pdf.save('diagnostic-report.pdf')
+    }
+  }
+
+  const handlePrint = () => window.print()
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
         title: 'Diagnostic Report',
         text: `Diagnostic Report with ${confidence}% confidence`,
-        url: window.location.href,
-      });
+        url: window.location.href
+      })
     } else {
-      alert("Sharing not supported in this browser.");
+      alert('Sharing not supported in this browser.')
     }
-  };
+  }
 
   return (
-    <Card className="shadow-md w-full min-h-screen" ref={cardRef}>
+    <Card className="shadow-md w-full min-h-screen print:min-h-0" ref={cardRef}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold">Diagnostic Report</CardTitle>
@@ -148,7 +174,7 @@ const ReportCard = ({ reportData }) => {
         </TabsContent>
       </Tabs>
 
-      <CardFooter className="pt-2 pb-4 px-6 flex flex-wrap gap-3">
+      <CardFooter className="pt-2 pb-4 px-6 flex flex-wrap gap-3 print:hidden">
         <Button onClick={handleDownload} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
           <Download className="mr-2 h-4 w-4" /> Download
         </Button>
@@ -192,7 +218,7 @@ const ReportCard = ({ reportData }) => {
         </Dialog>
       </CardFooter>
     </Card>
-  );
-};
+  )
+}
 
-export default ReportCard;
+export default ReportCard
