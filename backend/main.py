@@ -12,6 +12,7 @@ import httpx
 from typing import List, Tuple
 from dotenv import load_dotenv
 import io
+import re
 
 
 # Load environment variables
@@ -190,12 +191,17 @@ async def generate_report(
         os.remove(temp_path)
 
         report = generate_medical_report(symptoms, img_bytes, modality)
+        # Extract the disease from the report
+        match = re.search(r"Disease Expected:\s*(.+)", report)
+        disease = match.group(1).strip() if match else "Unknown"
+
         # Store the report in a global variable
         latest_reports[modality] = {
         "symptoms": symptoms,
-        "report": report
+        "report": report,
+        "disease": disease
         }
-        return JSONResponse(content={"symptoms": symptoms, "report": report})
+        return JSONResponse(content={"symptoms": symptoms, "disease": disease ,"report": report})
     except HTTPException:
         os.remove(temp_path)
         raise
