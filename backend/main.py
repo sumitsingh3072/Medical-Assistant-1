@@ -27,7 +27,7 @@ from services.xray_service import process_xray, init_xray_model
 # Uncomment when available:
 from services.ct_service import process_ct, init_ct_models
 # from services.ultrasound_service import process_ultrasound, init_ultrasound_model
-# from services.mri_service import process_mri, init_mri_model
+from services.mri_service import process_mri, init_mri_models
 
 # Initialize Google GenAI Client (multimodal)
 # pip install google-genai
@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
     init_xray_model()
     init_ct_models()
     # init_ultrasound_model()
-    # init_mri_model()
+    init_mri_models()
     yield
     print("Shutting down models...")
 
@@ -404,6 +404,92 @@ async def get_latest_report_ct3d():
         raise HTTPException(status_code=404, detail="No 3D CT report available.")
     return latest_reports["ct3d"]
 
+@app.post("/predict/mri/3d/")
+async def generate_report_mri3d(file: UploadFile = File(...)):  
+    # 1) Save upload to disk
+    temp_path = f"temp_mri3d_{file.filename}"
+    with open(temp_path, "wb") as buf:
+        shutil.copyfileobj(file.file, buf)
+    try:
+        # 2) Run your 3D model to get symptoms label(s)
+        raw_preds = process_mri(temp_path, mode='3d', device="cpu")
+        label, prob = raw_preds[0]
+        symptoms = [label]
+
+        # 3) Load volume and pick mid-slices
+        img = load(temp_path)
+        vol = img.get_fdata() #type: ignore
+        z, y, x = [d // 2 for d in vol.shape]
+        slices = {
+            "axial":   vol[z, :, :],
+            "coronal": vol[:, y, :],
+            "sagittal":vol[:, :, x],
+        }
+
+        # 4) Convert each slice to PNG bytes
+        image_parts = []
+        for name, sl in slices.items():
+            # normalize slice to [0,255]
+            sl_norm = ((sl - sl.min())/(sl.max()-sl.min()) * 255).astype(np.uint8)
+            pil = Image.fromarray(sl_norm).convert("L").resize((224,224))
+            buf = io.BytesIO()
+            pil.save(buf, format="PNG")
+            image_parts.append(Part.from_bytes(data=buf.getvalue(), mime_type="image/png"))
+
+        os.remove(temp_path)
+
+        # 5) Build prompt & send all three images + prompt
+        prompt = (
+            '''
+                You are a medical specialist in interpreting brain MRI results. 
+                Based on the image and the patient symptoms: {symptoms}, your task is to:
+
+                1. Identify the condition with the highest confidence score from the list: ["No Tumor", "Meningioma", "Glioma", "Pituitary Tumor"].
+                2. Clearly mention the detected condition and the confidence score as a percentage (e.g., 87.45%).
+                3. Explain what this result means for the patient in clear, simple language, based on the detected condition.
+                4. Describe briefly how brain MRI helps in identifying such conditions by providing high-resolution images of soft tissues.
+                5. Suggest possible next steps, such as neurologist consultation, further imaging, or biopsy, depending on the condition.
+                6. End with a disclaimer stating that this is an AI-generated preliminary result and must be verified by a certified medical professional.
+                7. Do not begin with "Based on the image and the patient symptoms" or any other introductory phrase.
+                8. Report size should be always between 200 and 300 words.
+                9. create a detailed MRI report including key findings, interpretation, and suggested follow‑up
+                9. Use the following format for the output:
+
+                Condition Detected: Glioma
+                The AI analysis of your brain MRI scan suggests a high probability of Glioma, with a confidence score of 89.00%. Gliomas are tumors that originate in the glial cells of the brain or spinal cord. They can affect brain function depending on their location, size, and growth rate, potentially causing symptoms such as headaches, seizures, or neurological changes.
+
+                MRI scans are highly effective for detecting such tumors, as they offer detailed images of soft brain tissues. This allows for accurate visualization of the tumor's structure and position, which is crucial for early diagnosis and treatment planning.
+
+                Although this result indicates a strong likelihood of Glioma, it is not a confirmed medical diagnosis. You should consult a neurologist or oncologist for further evaluation. Additional tests like a contrast-enhanced MRI or biopsy may be recommended to validate the finding.
+
+                Disclaimer: This is an AI-generated result. Please seek advice from a certified medical professional.
+            '''
+        ).format(symptoms=symptoms)
+
+
+        response = client.models.generate_content(
+            model="models/gemini-2.0-flash",
+            contents=[*image_parts, prompt]
+        )
+        report = response.text or "<empty>"
+        match = re.search(r"Condition Detected:\s*(.+)", report)
+        disease = match.group(1).strip() if match else "Unknown"
+
+        # 6) Store & return
+        latest_reports["mri3d"] = {
+            "Symptom": label,
+            "disease": disease,
+            "report": report
+        }
+        return JSONResponse(latest_reports["mri3d"])
+    except Exception as e:
+        if os.path.exists(temp_path): os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/predict/mri/3d/")
+async def get_latest_report_mri3d():
+    if "mri3d" not in latest_reports:
+        raise HTTPException(status_code=404, detail="No 3D MRI report available.")
+    return latest_reports["mri3d"]
 # Mock database of doctors
 class Doctor(BaseModel):
     name: str
