@@ -480,3 +480,4 @@ async def search_doctors(
             enriched_doctors.append({**doc, "lat": lat, "lng": lng})
 
     return enriched_doctors
+# @app.get("/api/get-doctor/{doctor_id}", response_model=Doctor)
