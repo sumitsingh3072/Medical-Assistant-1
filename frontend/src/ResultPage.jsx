@@ -1,91 +1,96 @@
 import React, { useEffect, useState } from 'react';
-import { Input } from './components/ui/input';
-import { Button } from './components/ui/button';
-import { Card, CardHeader, CardContent, CardTitle } from './components/ui/card';
-import axios from 'axios';
+import ReportCard from './ReportCard';
 
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
-const DoctorSearchPage = () => {
-  const [location, setLocation] = useState('');
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(false);
+const ResultsPage = () => {
+  const [reportData, setReportData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Auto-detect location using Geolocation API
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
-            params: {
-              lat: latitude,
-              lon: longitude,
-              format: 'json',
-            },
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${BASE_API_URL}/get_latest_results/`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+
+        const entries = Object.entries(data || {});
+        if (entries.length === 0) {
+          setReportData({
+            symptoms: [],
+            diagnosis: 'No conditions detected.',
+            confidence: 0,
+            recommendations: ['Maintain regular checkups'],
+            suggested_tests: [],
+            specialty: 'General Physician',
+            timestamp: new Date().toISOString(),
           });
-          const city = res.data.address?.city || res.data.address?.town || res.data.address?.village || '';
-          if (city) setLocation(city);
-        } catch (err) {
-          console.warn('Geolocation reverse lookup failed:', err);
+        } else {
+          const sorted = entries.sort((a, b) => b[1] - a[1]);
+          const topK = sorted.slice(0, 3);
+          const symptoms = topK.map(([cond]) => cond);
+          const [bestCond, bestScore] = sorted[0];
+
+          // Simple specialty matching logic (can be refined)
+          const specialtyMap = {
+            Diabetes: 'Endocrinologist',
+            Pneumonia: 'Pulmonologist',
+            Depression: 'Psychiatrist',
+            'Heart Disease': 'Cardiologist',
+          };
+
+          const specialty = specialtyMap[bestCond] || 'General Physician';
+
+          setReportData({
+            symptoms,
+            diagnosis: bestCond,
+            confidence: Math.round(bestScore * 100),
+            recommendations: [
+              `Consult a ${specialty}`,
+              'Follow a healthy lifestyle',
+              'Get relevant tests done'
+            ],
+            suggested_tests: ['Blood Test', 'Imaging', 'Consultation'],
+            specialty,
+            timestamp: new Date().toISOString(),
+          });
         }
-      });
-    }
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load report. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleSearch = async () => {
-    if (!location) return;
-    setLoading(true);
-    try {
-      const res = await axios.get(`${BASE_API_URL}/api/search-doctors`, {
-        params: { location },
-      });
-      setDoctors(res.data.results || []);
-    } catch (err) {
-      console.error('Error fetching doctors:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-slate-500 min-h-screen">
+        Loading report...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center text-2xl text-red-600 opacity-60 min-h-screen">
+        {error} 😢
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-4 ">
-      <Card>
-        <CardHeader>
-          <CardTitle>Find a Nearby Doctor</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter your location (e.g. Delhi)"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? 'Searching...' : 'Search'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="p-6 min-h-screen space-y-6 max-w-4xl mx-auto">
 
-      {doctors.length > 0 && (
-        <div className="space-y-3">
-          {doctors.map((doc, idx) => (
-            <Card key={idx} className="p-4">
-              <h4 className="font-semibold text-lg">{doc.name}</h4>
-              <p className="text-sm text-muted-foreground">{doc.specialty} - {doc.location}</p>
-              <a
-                href={`tel:${doc.phone}`}
-                className="mt-2 inline-block text-blue-600 hover:underline"
-              >
-                Call: {doc.phone}
-              </a>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div id="report-content">
+        <ReportCard report={reportData} />
+      </div>
     </div>
   );
 };
 
-export default DoctorSearchPage;
+export default ResultsPage;

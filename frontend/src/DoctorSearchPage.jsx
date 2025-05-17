@@ -93,7 +93,7 @@ const DoctorSearchPage = ({ defaultSpecialty = "" }) => {
   };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-4 bg-white dark:bg-black">
       <div className="flex flex-wrap gap-2 items-center">
         <Input
           placeholder="Enter location"
