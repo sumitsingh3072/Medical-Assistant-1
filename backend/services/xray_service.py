@@ -5,7 +5,7 @@ import torch
 from models.xray_model import load_chexnet_model, predict_xray
 
 # Default path to the CheXNet weights
-DEFAULT_WEIGHT_PATH = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\xray\xray.pth.tar"
+DEFAULT_WEIGHT_PATH = r"C:\Users\Somil Gupta\OneDrive\Desktop\Medical-Assistant-1\model_assests\xray\xray.pth.tar"
 
 
 # ---------------------------

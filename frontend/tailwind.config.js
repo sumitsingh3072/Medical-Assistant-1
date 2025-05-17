@@ -56,6 +56,15 @@ export default {
   			}
   		},
   		keyframes: {
+			marquee: {
+      '0%': { transform: 'translateX(0%)' },
+      '100%': { transform: 'translateX(-100%)' },
+    },
+			ripple: {
+      '0%': { transform: 'translate(-50%, -50%) scale(0.9)', opacity: '0.5' },
+      '70%': { transform: 'translate(-50%, -50%) scale(1.4)', opacity: '0' },
+      '100%': { transform: 'translate(-50%, -50%) scale(1.4)', opacity: '0' },
+    },
   			'accordion-down': {
   				from: {
   					height: '0'
@@ -75,9 +84,12 @@ export default {
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+			'ripple': 'ripple 2s infinite ease-out',
+			'marquee': 'marquee var(--duration, 20s) linear infinite',
   		}
   	}
   },
   plugins: [animate],
 };
+

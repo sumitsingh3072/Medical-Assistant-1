@@ -107,7 +107,7 @@ const ReportCard = ({ report }) => {
             </div>
 
             <div>
-              <h4 className="font-medium text-sm text-slate-700 mb-2">AI Confidence Assessment</h4>
+              <h4 className="font-medium text-sm text-slate-600 mb-2">AI Confidence Assessment</h4>
               <div className="flex items-center gap-2 mb-1">
                 <div className={`font-medium ${getConfidenceColor(confidence)}`}>{confidence}%</div>
                 {confidence >= 85
@@ -124,8 +124,8 @@ const ReportCard = ({ report }) => {
             </div>
 
             <div className="mt-4">
-              <h4 className="font-medium text-sm text-slate-700 mb-1">Suggested Specialist</h4>
-              <div className="flex items-center text-sm text-slate-600 gap-2">
+              <h4 className="font-medium text-sm text-slate-600 mb-1">Suggested Specialist</h4>
+              <div className="flex items-center text-sm text-slate-500 gap-2">
                 <Stethoscope className="w-4 h-4 text-emerald-500" />
                 {specialty}
               </div>
@@ -219,7 +219,7 @@ const ReportCard = ({ report }) => {
             <DialogHeader>
               <DialogTitle>Diagnostic Details</DialogTitle>
             </DialogHeader>
-            <CardContent className="space-y-3 text-sm text-slate-700">
+            <CardContent className="space-y-3 text-sm text-slate-400">
               <div>
                 <strong>Diagnosis:</strong> {diagnosis}
               </div>
