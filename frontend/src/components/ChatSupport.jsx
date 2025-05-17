@@ -32,9 +32,8 @@ export default function ChatSupport() {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${BASE_API_URL}/chat_with_report/`, {
-        message: userText,
-      });
+      const res = await axios.post(`${BASE_API_URL}/chat_with_report/`, { message: userText });
+
       const botReply = res?.data?.response || "Sorry, I didn't get that.";
       setMessages((prev) => [...prev, { role: "bot", text: botReply }]);
     } catch (err) {
