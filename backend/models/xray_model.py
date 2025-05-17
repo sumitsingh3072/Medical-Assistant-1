@@ -25,7 +25,7 @@ class CheXNet(nn.Module):
 # -------------------------------
 # Load Pretrained CheXNet Weights
 # -------------------------------
-def load_chexnet_model(weight_path=r"model_assests\xray\xray.pth.tar", device="cpu"):
+def load_chexnet_model(weight_path=r"backend\model_assests\xray\xray.pth.tar", device="cpu"):
     model = CheXNet(num_classes=14)
     checkpoint = torch.load(weight_path, map_location=device)
     model.load_state_dict(checkpoint["state_dict"])
