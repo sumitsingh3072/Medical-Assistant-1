@@ -69,7 +69,7 @@ PROMPT_TEMPLATES = {
     "xray": (
         """"
         You are a medical AI assistant. 
-        Given a set of confidence scores for these diseases, your task is to:
+        Based on the image and the patient symptoms: {symptoms} your task is to:
 
         1. Idenify if the image is of a chest X-ray. If not, return "Not a chest X-ray" and do not proceed.
         2. Identify the disease with the highest confidence score.
@@ -90,8 +90,7 @@ PROMPT_TEMPLATES = {
         Please consult a certified radiologist or doctor.
 
         """
-        "Based on the image and the patient symptoms: {symptoms}, "
-        "provide a structured radiology report including findings, impression, and recommendations."
+    
     ),
     "ct": (
         '''
