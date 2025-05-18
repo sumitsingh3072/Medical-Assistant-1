@@ -22,6 +22,8 @@ import Testimonials from './components/Testimonials';
 import { ScratchToReveal } from "./components/magicui/scratch-to-reveal";
 import FaqSection from './components/FaqSection';
 import PrivacySection from './components/PrivacySection';
+import { AuroraText } from "./components/magicui/aurora-text";
+import { MagicCard } from "./components/magicui/magic-card";
 
 const LandingPage = () => {
   return (
@@ -39,7 +41,7 @@ const LandingPage = () => {
               <h1 className="text-4xl md:text-5xl lg:text-6xl tracking-tight">
                 Diagnose Smarter, <br />
                 <SparklesText>
-                  <span className="text-blue-400 font-base">Faster, Better.</span>
+                  <AuroraText>Faster, Better</AuroraText>
                 </SparklesText>
               </h1>
 
@@ -175,7 +177,9 @@ const LandingPage = () => {
 
       {/* security claim */}
       <section className='mx-auto py-16 w-full px-2 md:px-44 bg-white dark:bg-zinc-950'>
-        <PrivacySection/>
+        <MagicCard className='relative overflow-hidden rounded-2xl bg-transparent text-black dark:text-white shadow-xl'>
+          <PrivacySection/>
+        </MagicCard>
       </section>
 
       {/* CTA Section */}
@@ -195,6 +199,7 @@ const LandingPage = () => {
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 shadow-lg rounded-full transition-transform transform hover:scale-105"
               >
                 <Link to="/upload">
+                
                   Start Your First Analysis <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
