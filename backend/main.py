@@ -14,9 +14,11 @@ from dotenv import load_dotenv
 import io
 import re
 import numpy as np
-import nibabel as nib
+import nibabel as nib # type: ignore
 from PIL import Image
-from nibabel.loadsave import load
+from nibabel.loadsave import load # type: ignore
+from geopy.geocoders import Nominatim
+
 
 
 # Load environment variables
@@ -499,73 +501,74 @@ class Doctor(BaseModel):
     lat: float
     lng: float
 
-mock_doctors = [
-    {
-        "name": "Dr. Anjali Sharma",
-        "specialty": "Dermatologist",
-        "location": "Bangalore",
-        "phone": "9999000011",
-        "lat": 12.9716,
-        "lng": 77.5946,
-    },
-    {
-        "name": "Dr. Ravi Patel",
-        "specialty": "Cardiologist",
-        "location": "Bangalore",
-        "phone": "8888777766",
-        "lat": 12.9720,
-        "lng": 77.5950,
-    },
-    {
-        "name": "Dr. Seema Reddy",
-        "specialty": "Neurologist",
-        "location": "Bangalore",
-        "phone": "7777888899",
-        "lat": 12.9705,
-        "lng": 77.5930,
-    },
-    {
-        "name": "Dr. Aditya Rao",
-        "specialty": "Dermatologist",
-        "location": "Bangalore",
-        "phone": "9999888877",
-        "lat": 12.9690,
-        "lng": 77.5920,
-    },
-]
+def build_overpass_query(lat: float, lng: float, shift: float = 0.03) -> str:
+    lat_min = lat - shift
+    lng_min = lng - shift
+    lat_max = lat + shift
+    lng_max = lng + shift
+    return f"""
+    [out:json][timeout:25];
+    node
+      [healthcare=doctor]
+      ({lat_min},{lng_min},{lat_max},{lng_max});
+    out;
+    """
 
-@app.get("/api/search-doctors", response_model=List[Doctor])
-async def search_doctors(
-    location: str = Query(...),
-    specialty: Optional[str] = Query(None),
-):
-    filtered = []
+@app.get("/api/search-doctors")
+async def search_doctors(location: str, specialty: str = ""):
+    geolocator = Nominatim(user_agent="doctor-search")
+    location_obj = geolocator.geocode(location + ", India")
+    if not location_obj:
+        return []
 
-    for doc in mock_doctors:
-        if location.lower() in doc["location"].lower():
-            if specialty is None or specialty.lower() in doc["specialty"].lower():
-                filtered.append(doc)
+    lat, lon = location_obj.latitude, location_obj.longitude
 
-    enriched_doctors = []
-
-    async with httpx.AsyncClient() as client:
-        for doc in filtered:
-            res = await client.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={"q": f"{doc['location']}, India", "format": "json", "limit": 1},
-                headers={"User-Agent": "doctor-finder"},
-            )
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    query = f"""
+    [out:json];
+    (
+      node["healthcare"="doctor"](around:10000,{lat},{lon});
+      node["amenity"="doctors"](around:10000,{lat},{lon});
+    );
+    out body;
+    """
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await client.post(overpass_url, data=query)
             data = res.json()
-            if data:
-                lat = float(data[0]["lat"])
-                lng = float(data[0]["lon"])
-            else:
-                lat = 0.0
-                lng = 0.0
+    except httpx.ReadTimeout:
+        return JSONResponse(
+            status_code=504,
+            content={"detail": "Overpass API timeout. Please try again later."}
+        )
 
-            enriched_doctors.append({**doc, "lat": lat, "lng": lng})
 
-    return enriched_doctors
+    doctors = []
+    for el in data.get("elements", []):
+        tags = el.get("tags", {})
+        name = tags.get("name", "Unnamed Doctor")
+        specialty_tag = (
+            tags.get("healthcare:speciality") or
+            tags.get("healthcare:specialty") or
+            tags.get("specialty") or
+            "General"
+        )
+        if specialty and specialty.lower() not in specialty_tag.lower():
+            continue
+
+        phone = tags.get("phone", "Not available")
+        addr = tags.get("addr:city") or tags.get("addr:suburb") or location
+
+        doctors.append({
+            "name": name,
+            "specialty": specialty_tag,
+            "location": addr,
+            "phone": phone,
+            "lat": el.get("lat"),
+            "lng": el.get("lon")
+        })
+
+    return doctors
 # @app.get("/api/get-doctor/{doctor_id}", response_model=Doctor)
 
 
