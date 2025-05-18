@@ -28,7 +28,7 @@ load_dotenv()
 from services.xray_service import process_xray, init_xray_model
 # Uncomment when available:
 from services.ct_service import process_ct, init_ct_models
-# from services.ultrasound_service import process_ultrasound, init_ultrasound_model
+from services.ultrasound_service import process_ultrasound, init_ultrasound_model
 from services.mri_service import process_mri, init_mri_models
 
 # Initialize Google GenAI Client (multimodal)
@@ -46,7 +46,7 @@ latest_reports = {}
 async def lifespan(app: FastAPI):
     init_xray_model()
     init_ct_models()
-    # init_ultrasound_model()
+    init_ultrasound_model()
     init_mri_models()
     yield
     print("Shutting down models...")
@@ -120,8 +120,31 @@ PROMPT_TEMPLATES = {
         "produce a detailed CT scan report including observations, differential diagnoses, and next steps."
     ),
     "ultrasound": (
-        "You are a radiology report assistant specialized in interpreting ultrasounds. "
-        "Based on the image and the patient symptoms: {symptoms}, "
+        '''
+
+        You are a medical assistant specialized in interpreting ultrasound scan results. 
+        Based on the image and the patient symptoms: {symptoms}, your task is to:
+
+        1. Identify the most likely condition based on the highest confidence score from the following categories: Normal, Cyst, Mass, Fluid, Other Anomaly.
+        2. Clearly state the detected condition along with its confidence score as a percentage (e.g., 88.50%).
+        3. Explain in simple and compassionate language what the result implies for the patient.
+        4. Provide a brief explanation of how ultrasound helps in detecting such conditions using sound waves for real-time internal imaging.
+        5. Suggest next medical steps such as follow-up scans, consultations, or further diagnostic procedures.
+        6. End with a disclaimer stating that this is an AI-generated preliminary result and must be verified by a certified medical professional.
+        7. Do not begin with "Based on the image and the patient symptoms" or any other introductory phrase.
+        8. Report size should be always between 200 and 300 words.
+        9. Use the following format for the output:
+        
+        Example Output:
+        Condition Detected: Cyst
+
+        Based on the ultrasound image, the AI model has identified the most likely condition as a Cyst, with a confidence score of 92.30%. This suggests the presence of a fluid-filled sac, which is typically benign and may not cause symptoms. Ultrasound imaging uses sound waves to create real-time visuals of internal organs and is effective in detecting such abnormalities. While most cysts are harmless, a follow-up consultation with a healthcare professional is recommended to evaluate its size, nature, and whether further investigation is needed.
+
+        Disclaimer: This is an AI-generated summary and not a substitute for professional medical advice.
+
+        Output the result as one clear and concise paragraph of around 100 words for easy understanding by non-medical users.
+        '''
+        
         "generate a comprehensive ultrasound report covering findings, clinical significance, and recommendations."
     ),
     "mri": (
@@ -233,7 +256,6 @@ async def generate_report(
         # Extract the disease from the report
         match = re.search(r"Disease Expected:\s*(.+)", report)
         disease = match.group(1).strip() if match else "Unknown"
-
         # Store the report in a global variable
         latest_reports[modality] = {
         "disease": disease,
@@ -323,7 +345,7 @@ async def generate_report_ct3d(file: UploadFile = File(...)):
     try:
         # 2) Run your 3D model to get symptoms label(s)
         raw_preds = process_ct(temp_path, mode="3d", device="cpu")
-        label, prob = raw_preds[0]
+        label, prob = raw_preds[0] # type: ignore
         symptoms = [label]
 
         # 3) Load volume and pick mid-slices
@@ -492,6 +514,96 @@ async def get_latest_report_mri3d():
     if "mri3d" not in latest_reports:
         raise HTTPException(status_code=404, detail="No 3D MRI report available.")
     return latest_reports["mri3d"]
+
+@app.post("/predict/ultrasound/")
+async def generate_report_ultrasound(file: UploadFile = File(...)):
+    modality = "ultrasound"
+
+    # 1) Validate content type before saving
+    if file.content_type not in ["image/jpeg", "image/png", "image/bmp"]:
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
+
+    # 2) Save upload to disk
+    temp_path = f"temp_{modality}_{file.filename}"
+    with open(temp_path, "wb") as buf:
+        shutil.copyfileobj(file.file, buf)
+
+    try:
+        # 3) Run your ultrasound model to get symptom labels
+        raw_preds = process_ultrasound(temp_path, device="cpu")
+        symptoms = extract_top_symptoms(raw_preds)
+
+        # 4) Read bytes for report generation
+        with open(temp_path, "rb") as f:
+            img_bytes = f.read()
+
+        # remove temp file ASAP
+        os.remove(temp_path)
+
+        # 5) Generate the Gemini‐based medical report
+        report = generate_medical_report(symptoms, img_bytes, modality=modality)
+
+        def extract_condition(report: str) -> str:
+            """
+            Robustly pull the text immediately following 'Condition Detected:' 
+            up to the first non‑empty line, ignoring case/extra whitespace.
+            """
+            if not report:
+                return "Unknown"
+
+            lower = report.lower()
+            keyword = "condition detected"
+            start = lower.find(keyword)
+            if start == -1:
+                return "Unknown"
+
+            # Find the colon after the keyword
+            colon = report.find(":", start + len(keyword))
+            if colon == -1:
+                return "Unknown"
+
+            # Grab everything after the colon
+            tail = report[colon+1:]
+
+            # Split into lines, return the first non-blank one
+            for line in tail.splitlines():
+                line = line.strip()
+                if line:
+                    return line
+
+            return "Unknown"
+
+        disease = extract_condition(report)
+        # 7) Store in global for frontend polling if needed
+        latest_reports[modality] = {
+            "disease":  disease,
+            "symptoms": symptoms,
+            "report":   report,
+        }
+
+        # 8) Return JSON
+        return JSONResponse(
+            content={"symptoms": symptoms, "disease": disease, "report": report}
+        )
+
+    except HTTPException:
+        # Already an HTTPException—nothing extra to clean up
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+
+    except Exception as e:
+        # Catch‐all: ensure temp file is removed
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+        
+@app.get("/predict/ultrasound/")
+async def get_latest_report_ultrasound():   
+    if "ultrasound" not in latest_reports:
+        raise HTTPException(status_code=404, detail="No ultrasound report available.")
+    return latest_reports["ultrasound"]
+
 # Mock database of doctors
 class Doctor(BaseModel):
     name: str
@@ -521,7 +633,7 @@ async def search_doctors(location: str, specialty: str = ""):
     if not location_obj:
         return []
 
-    lat, lon = location_obj.latitude, location_obj.longitude
+    lat, lon = location_obj.latitude, location_obj.longitude # type: ignore
 
     overpass_url = "http://overpass-api.de/api/interpreter"
     query = f"""
@@ -534,7 +646,7 @@ async def search_doctors(location: str, specialty: str = ""):
     """
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            res = await client.post(overpass_url, data=query)
+            res = await client.post(overpass_url, data=query) # type: ignore
             data = res.json()
     except httpx.ReadTimeout:
         return JSONResponse(
@@ -585,7 +697,7 @@ async def chat_with_report(request: ChatRequest):
     if "upload" in user_message and "image" in user_message:
         reply = (
             "To upload a medical image, go to the 'Upload' section from the navbar. "
-            "There, you can choose from 6 model types: MRI 2D, MRI 3D, X-ray, Ultrasound, CT Scan 2D, and CT Scan 3D. "
+            "There, you can choose from 5 model types: MRI, X-ray, Ultrasound, CT Scan 2D, and CT Scan 3D. "
             "After selecting the type and uploading your image, click 'Upload and Analyze' to get the result."
         )
     elif "analyze" in user_message or "report" in user_message:

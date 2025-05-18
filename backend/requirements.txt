@@ -9,3 +9,4 @@ numpy
 pillow
 pydantic
 fastapi-users
+timm
