@@ -153,7 +153,12 @@ npm run dev
 
 ## 📸 UI Preview
 
-> *Add screenshot here*
+- Landing Page
+<img src="0.png"/>
+- File Upload
+<img src="1.png"/>
+- Results Page
+<img src="2.png"/>
 
 ---
 
