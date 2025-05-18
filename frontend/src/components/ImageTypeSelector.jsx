@@ -4,16 +4,16 @@ import { Badge } from './ui/badge';
 import { Brain, Heart, Stethoscope, Eye, Dna, Zap, Bone, Thermometer, BarChart, ScanHeart, AudioWaveform } from 'lucide-react';
 
 const imageTypes = [
-  {
-    id: 'mri_2d',
-    name: 'MRI (2D)',
-    description: '2D MRI scans for quick anatomical overview',
-    icon: Brain,
-    color: 'bg-purple-400',
-  },
+  // {
+  //   id: 'mri_2d',
+  //   name: 'MRI (2D)',
+  //   description: '2D MRI scans for quick anatomical overview',
+  //   icon: Brain,
+  //   color: 'bg-purple-400',
+  // },
   {
     id: 'mri_3d',
-    name: 'MRI (3D)',
+    name: 'MRI',
     description: '3D MRI scans for volumetric soft tissue analysis',
     icon: Brain,
     color: 'bg-purple-700',

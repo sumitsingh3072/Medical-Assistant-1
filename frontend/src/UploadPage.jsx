@@ -51,6 +51,15 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
     } else if (selectedImageType === 'ct_3d') {
       predictionEndpoint = `${BASE_API_URL}/predict/ct/3d/`;
       reportEndpoint = '';  // Same — prediction handles everything
+    } else if (selectedImageType === 'mri_2d') {
+      predictionEndpoint = `${BASE_API_URL}/predict/mri/2d/`;
+      reportEndpoint = '';  // Not needed separately — prediction includes report
+    } else if (selectedImageType === 'mri_3d') {
+      predictionEndpoint = `${BASE_API_URL}/predict/mri/3d/`;
+      reportEndpoint = '';  // Same — prediction handles everything
+    } else if (selectedImageType === 'ultrasound') {
+      predictionEndpoint = `${BASE_API_URL}/predict/ultrasound/`;
+      reportEndpoint = '';  // Same — prediction handles everything
     } else {
       return setError('Unsupported image type selected.');
     }
