@@ -25,9 +25,7 @@ const ResultChatPage = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${BASE_API_URL}/resultchat/`, {
-        message: input,
-      });
+      const res = await axios.post(`${BASE_API_URL}/chat_with_report/`, { message: input });
 
       const aiReply = res.data.response || 'Sorry, I could not understand that.';
       setMessages((prev) => [...prev, { role: 'ai', text: aiReply }]);

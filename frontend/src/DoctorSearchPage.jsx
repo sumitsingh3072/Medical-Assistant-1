@@ -20,6 +20,13 @@ const DoctorSearchPage = ({ defaultSpecialty = "" }) => {
   const [coords, setCoords] = useState(null);
   const [loading, setLoading] = useState(false);
   const [geoError, setGeoError] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const doctorsPerPage = 6;
+
+  const paginatedDoctors = doctors.slice(
+    (currentPage - 1) * doctorsPerPage,
+    currentPage * doctorsPerPage
+  );
 
   // Try get current location on mount
   useEffect(() => {
@@ -78,7 +85,7 @@ const DoctorSearchPage = ({ defaultSpecialty = "" }) => {
   const handleSearch = async () => {
     if (!location) {
       alert("Please enter a location.");
-      return;
+      return; 
     }
     setLoading(true);
     setDoctors([]);
@@ -191,7 +198,7 @@ const DoctorSearchPage = ({ defaultSpecialty = "" }) => {
         {!loading && doctors.length === 0 && (
           <p className="text-center text-gray-500 italic">No doctors found.</p>
         )}
-        {doctors.map((doc, idx) => (
+        {paginatedDoctors.map((doc, idx) => (
           <div
             key={idx}
             className="border border-gray-300 dark:border-gray-700 p-5 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300"
@@ -217,6 +224,12 @@ const DoctorSearchPage = ({ defaultSpecialty = "" }) => {
             </Button>
           </div>
         ))}
+        {doctors.length > doctorsPerPage && (
+  <div className="flex justify-center gap-2 pt-4">
+    <Button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</Button>
+    <Button disabled={currentPage * doctorsPerPage >= doctors.length} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+  </div>
+)}
       </div>
     </div>
   );
