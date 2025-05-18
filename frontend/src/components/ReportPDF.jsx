@@ -112,7 +112,7 @@ const ReportPDF = ({ reportData }) => {
         <View style={styles.header}>
           <Image
             style={styles.logo}
-            src="" // Replace with your logo URL
+            src="logo.png" // Replace with your logo URL
           />
           <View style={styles.titleBlock}>
             <Text style={styles.title}>Diagnostic Report</Text>
