@@ -24,5 +24,5 @@ def test_xray(image_path: str, device: str = "cpu", top_k: int = 3):
 # Example usage
 if __name__ == "__main__":
     # Set your image path here
-    image_path = r"data\xray\test1.png"  # Replace with actual image
+    image_path = r"backend\data\xray\test1.png"  # Replace with actual image
     test_xray(image_path=image_path, device="cpu", top_k=3)
