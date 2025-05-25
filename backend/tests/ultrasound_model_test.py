@@ -13,7 +13,7 @@ from services.ultrasound_service import init_ultrasound_model, process_ultrasoun
 def test_ultrasound():
     try:
         # --- Settings ---
-        image_path = r"C:\ML_Projects\Medical-Assistant-1\data\ultrasound\c15.jpg"
+        image_path = r"backend\data\ultrasound\c15.jpg"
         device = "cpu"
         top_k = 3  # number of predictions to return
 

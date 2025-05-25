@@ -12,7 +12,7 @@ from backend.models.mri_model import (
 
 # Paths to your downloaded weights
 WEIGHTS_2D = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\mri\2d\model.h5"
-WEIGHTS_3D = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\mri\3d\resnet_200.pth"
+WEIGHTS_3D = r"backend\model_assests\mri\3d\resnet_200.pth"
 
 def explore_checkpoint(path):
     print(f"--- Exploring checkpoint: {path} ---")
