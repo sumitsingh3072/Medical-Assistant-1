@@ -1,16 +1,17 @@
-# backend/models/ct_model.py
-
-import os
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
-from nibabel.loadsave import load as load_nifti
 import numpy as np
+from nibabel.loadsave import load as load_nifti
+from pathlib import Path
+import os
 
-# ---------------------------
-# 2D Model: ResNet-based
-# ---------------------------
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+CT_2D_WEIGHTS_PATH = BACKEND_ROOT / 'model_assests' / 'ct' / '2d' / 'ResNet50.pt'
+CT_3D_WEIGHTS_PATH = BACKEND_ROOT / 'model_assests' / 'ct' / '3d' / 'resnet_200.pth'
+
+
 class CTNet2D(nn.Module):
     def __init__(self, num_classes=2):
         super(CTNet2D, self).__init__()
@@ -28,58 +29,33 @@ ct_transforms_2d = transforms.Compose([
                          std=[0.229, 0.224, 0.225])
 ])
 
-# ---------------------------
-# 3D Model: Simple Conv3D + Pool
-# ---------------------------
+
+# 3D CNN
+def window_and_normalize(volume, hu_min=-150, hu_max=350):
+    vol = np.clip(volume, hu_min, hu_max)
+    return (vol - hu_min) / (hu_max - hu_min)
+
+def preprocess_ct_3d(vol):
+    vol = window_and_normalize(vol)
+    return np.resize(vol, (64,224,224))
+
 class CTNet3D(nn.Module):
     def __init__(self, num_classes=2):
-        super(CTNet3D, self).__init__()
+        super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv3d(1, 32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool3d(1)
+            nn.Conv3d(1,32,3,1,1), nn.ReLU(), nn.AdaptiveAvgPool3d(1)
         )
-        self.fc = nn.Linear(32, num_classes)
-
+        self.fc = nn.Linear(32,num_classes)
     def forward(self, x):
         x = self.conv(x)
-        x = x.view(x.size(0), -1)
-        return self.fc(x)
+        return self.fc(x.view(x.size(0),-1))
 
-# ---------------------------
-# Direct absolute paths to your checkpoint files
-# ---------------------------
-CT_2D_WEIGHTS_PATH = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\ct\2d\ResNet50.pt"
-CT_3D_WEIGHTS_PATH = r"C:\ML_Projects\Medical-Assistant-1\backend\model_assests\ct\3d\resnet_200.pth"
+ct_transforms_2d = transforms.Compose([
+    transforms.Resize((224,224)), transforms.ToTensor(),
+    transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
+])
 
-# ---------------------------
-# Hounsfield Unit windowing
-# ---------------------------
-def window_and_normalize(volume: np.ndarray,
-                         hu_min: int = -150,
-                         hu_max: int = 350) -> np.ndarray:
-    """
-    Clip the volume to [hu_min, hu_max] and normalize to [0,1].
-    """
-    vol = np.clip(volume, hu_min, hu_max)
-    vol = (vol - hu_min) / (hu_max - hu_min)
-    return vol
-
-# ---------------------------
-# 3D Volume Preprocessing
-# ---------------------------
-def preprocess_ct_3d(volume: np.ndarray) -> np.ndarray:
-    # Apply HU windowing & normalization
-    vol = window_and_normalize(volume,
-                               hu_min=-150,
-                               hu_max=350)
-    # Resize to fixed shape (D,H,W) = (64,224,224)
-    vol_resized = np.resize(vol, (64, 224, 224))
-    return vol_resized
-
-# ---------------------------
-# Load Model Dispatcher
-# ---------------------------
+# Load
 def load_ct_model(mode="2d", device="cpu"):
     if mode == "2d":
         model = CTNet2D()
@@ -114,9 +90,7 @@ def load_ct_model(mode="2d", device="cpu"):
     model.eval()
     return model
 
-# ---------------------------
-# Prediction Dispatcher with decision threshold
-# ---------------------------
+# Predict
 def predict_ct(model, image_path, mode="2d", device="cpu",
                thresh_low: float = 0.35,
                thresh_high: float = 0.65):
@@ -160,4 +134,3 @@ def predict_ct(model, image_path, mode="2d", device="cpu",
         # 2D: keep full distribution
         # When returning only top prediction
         return [(classes[np.argmax(probs)], float(np.max(probs)))]
-

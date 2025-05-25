@@ -1,14 +1,12 @@
-# backend/services/ct_service.py
-
 import os
 import torch
+from pathlib import Path
 from models.ct_model import load_ct_model, predict_ct
 
-# ---------------------------
-# Initialize and cache CT models
-# ---------------------------
+# Cache
 _ct_models = {}
 
+# Initialize
 def init_ct_models(device: str = "cpu") -> None:
     """
     Load and cache both 2D and 3D CT models into memory.
@@ -19,9 +17,7 @@ def init_ct_models(device: str = "cpu") -> None:
     # Load 3D model
     _ct_models['3d'] = load_ct_model(mode='3d', device=device)
 
-# ---------------------------
-# CT Processing Service
-# ---------------------------
+# Process
 def process_ct(image_path: str, mode: str = '2d', device: str = "cpu"):
     """
     Process a CT image or volume and return predictions.
@@ -43,17 +39,7 @@ def process_ct(image_path: str, mode: str = '2d', device: str = "cpu"):
     results = predict_ct(model, image_path, mode=mode, device=device)
     return results
 
-# ---------------------------
-# Optional: Utility to validate input
-# ---------------------------
-def is_supported_ct_file(filename: str, mode: str) -> bool:
-    """
-    Check if the file extension is supported for the given mode.
-    """
-    ext = os.path.splitext(filename)[1].lower()
-    if mode == '2d':
-        return ext in ['.png', '.jpg', '.jpeg']
-    elif mode == '3d':
-        return ext in ['.nii', '.nii.gz', '.dcm']
-    else:
-        return False
+# Validator
+def is_supported_ct_file(fn, mode):
+    ext = Path(fn).suffix.lower()
+    return ext in (['.png','.jpg','.jpeg'] if mode=='2d' else ['.nii','.nii.gz','.dcm'])
