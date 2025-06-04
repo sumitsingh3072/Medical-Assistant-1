@@ -164,8 +164,8 @@ npm run dev
 
 ## ✍️ Authors
 
+* **Sumit Singh** (Model Training + Backend Development)
 * **Somil Gupta** (Frontend + Backend Integrations)
-* **Sumit Singh** (Model Training + Prompt Engineering)
 * **Abhishek** (Prompt Designing + chatbot)
 
 ---
