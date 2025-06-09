@@ -10,3 +10,4 @@ pillow
 pydantic
 fastapi-users
 timm
+httpx>=0.24.0
