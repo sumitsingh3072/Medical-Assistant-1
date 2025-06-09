@@ -24,3 +24,5 @@ torchvision
 tqdm
 uvicorn
 python-dotenv
+fastapi
+fastapi-users
