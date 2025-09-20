@@ -198,6 +198,4 @@ MIT License © 2025
 
 🧱 Design and Developed by Team **CodeGenius**  ⚙️
 
-<!-- ## 🧭 Project Status
-
-> Alpha 🚧 – Core features implemented, refining UI/UX & robustness underway. -->
+ 
