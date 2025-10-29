@@ -627,32 +627,48 @@ def build_overpass_query(lat: float, lng: float, shift: float = 0.03) -> str:
 
 @app.get("/api/search-doctors")
 async def search_doctors(location: str, specialty: str = ""):
-    geolocator = Nominatim(user_agent="doctor-search")
-    location_obj = geolocator.geocode(location + ", India")
-    if not location_obj:
-        return []
+    # geolocator = Nominatim(user_agent="doctor-search")
+    # location_obj = geolocator.geocode(location + ", India")
+    # if not location_obj:
+    #     return []
 
-    lat, lon = location_obj.latitude, location_obj.longitude # type: ignore
+    # lat, lon = location_obj.latitude, location_obj.longitude # type: ignore
 
-    overpass_url = "http://overpass-api.de/api/interpreter"
-    query = f"""
-    [out:json];
-    (
-      node["healthcare"="doctor"](around:10000,{lat},{lon});
-      node["amenity"="doctors"](around:10000,{lat},{lon});
-    );
-    out body;
-    """
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            res = await client.post(overpass_url, data=query) # type: ignore
-            data = res.json()
-    except httpx.ReadTimeout:
-        return JSONResponse(
-            status_code=504,
-            content={"detail": "Overpass API timeout. Please try again later."}
-        )
+    # Overpass API call commented out for mock data
+    # overpass_url = "http://overpass-api.de/api/interpreter"
+    # query = f"""
+    # [out:json];
+    # (
+    #   node["healthcare"="doctor"](around:10000,{lat},{lon});
+    #   node["amenity"="doctors"](around:10000,{lat},{lon});
+    # );
+    # out body;
+    # """
+    # try:
+    #     async with httpx.AsyncClient(timeout=30.0) as client:
+    #         res = await client.post(overpass_url, data=query) # type: ignore
+    #         data = res.json()
+    # except httpx.ReadTimeout:
+    #     return JSONResponse(
+    #         status_code=504,
+    #         content={"detail": "Overpass API timeout. Please try again later."}
+    #     )
 
+    # Mock data for doctors
+    data = {
+        "elements": [
+            {"lat": 12.9600, "lon": 77.7100, "tags": {"name": "Dr. A. Rao", "healthcare:speciality": "General Physician", "phone": "+91-9876500001", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9615, "lon": 77.7115, "tags": {"name": "Dr. B. Kumar", "healthcare:speciality": "Pediatrician", "phone": "+91-9876500002", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9580, "lon": 77.7080, "tags": {"name": "Dr. C. Iyer", "healthcare:speciality": "Dermatologist", "phone": "+91-9876500003", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9620, "lon": 77.7130, "tags": {"name": "Dr. D. Nair", "healthcare:speciality": "Cardiologist", "phone": "+91-9876500004", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9590, "lon": 77.7095, "tags": {"name": "Dr. E. Singh", "specialty": "Fever Specialist", "phone": "+91-9876500005", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9575, "lon": 77.7075, "tags": {"name": "Dr. F. Patel", "healthcare:speciality": "Orthopedist", "phone": "+91-9876500006", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9605, "lon": 77.7125, "tags": {"name": "Dr. G. Mehta", "specialty": "Lameness Specialist", "phone": "+91-9876500007", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9630, "lon": 77.7140, "tags": {"name": "Dr. H. Sharma", "healthcare:speciality": "Neurologist", "phone": "+91-9876500008", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9560, "lon": 77.7060, "tags": {"name": "Dr. I. Desai", "healthcare:speciality": "Gastroenterologist", "phone": "+91-9876500009", "addr:suburb": "Gantiganahalli"}},
+            {"lat": 12.9610, "lon": 77.7105, "tags": {"name": "Dr. J. Reddy", "healthcare:speciality": "Pulmonologist", "phone": "+91-9876500010", "addr:suburb": "Gantiganahalli"}}
+        ]
+    }
 
     doctors = []
     for el in data.get("elements", []):
@@ -664,6 +680,7 @@ async def search_doctors(location: str, specialty: str = ""):
             tags.get("specialty") or
             "General"
         )
+        # filter by requested specialty keyword
         if specialty and specialty.lower() not in specialty_tag.lower():
             continue
 
