@@ -2,6 +2,7 @@ geopy
 google-api-python-client
 google-auth
 google-generativeai
+google-genai
 grpcio
 huggingface-hub
 httpx
@@ -11,6 +12,7 @@ monai
 nibabel
 numpy
 opencv-python
+Pillow
 pydantic
 pydicom
 requests

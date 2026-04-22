@@ -1,5 +1,4 @@
-NMIT
-mnit
+venv/
 __pychache__
 *.pyc
 .env
