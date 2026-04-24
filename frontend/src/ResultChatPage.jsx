@@ -4,7 +4,7 @@ import { Input } from './components/ui/input';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 
-const BASE_API_URL = '';
+const BASE_API_URL = import.meta.env.VITE_API_URL || '';
 
 const ResultChatPage = () => {
   const [messages, setMessages] = useState([

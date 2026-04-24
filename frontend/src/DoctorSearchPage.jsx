@@ -100,7 +100,8 @@ const DoctorSearchPage = ({ defaultSpecialty = "" }) => {
       }
 
       // Fetch doctors from backend
-      const res = await axios.get("/api/search-doctors", {
+      const BASE_API_URL = import.meta.env.VITE_API_URL || '';
+      const res = await axios.get(`${BASE_API_URL}/api/search-doctors`, {
         params: { location, specialty },
       });
       setDoctors(res.data);

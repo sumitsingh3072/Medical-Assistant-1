@@ -32,7 +32,7 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
     reader.readAsDataURL(selectedFile);
   };
 
-  const BASE_API_URL = '';
+  const BASE_API_URL = import.meta.env.VITE_API_URL || '';
 
   const handleUpload = async () => {
   if (!file) return setError('Please select a file first.');
