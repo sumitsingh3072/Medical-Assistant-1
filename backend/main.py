@@ -1,13 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException ,Path
+from fastapi import FastAPI, UploadFile, File, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import shutil
-from contextlib import asynccontextmanager
 import os
-from services.xray_service import process_xray, init_xray_model
 from pydantic import BaseModel
 from typing import List, Optional
-from fastapi import FastAPI, Query
 import httpx
 from typing import List, Tuple
 from dotenv import load_dotenv
@@ -25,11 +22,10 @@ from geopy.geocoders import Nominatim
 load_dotenv()
 
 # Import your ML model functions for each modality
-from services.xray_service import process_xray, init_xray_model
-# Uncomment when available:
-from services.ct_service import process_ct, init_ct_models
-from services.ultrasound_service import process_ultrasound, init_ultrasound_model
-from services.mri_service import process_mri, init_mri_models
+from services.xray_service import process_xray
+from services.ct_service import process_ct
+from services.ultrasound_service import process_ultrasound
+from services.mri_service import process_mri
 
 # Initialize Google GenAI Client (multimodal)
 # pip install google-genai
@@ -41,17 +37,7 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 latest_xray_results: dict = {}
 latest_reports = {}  
 
-# Startup: initialize all models
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_xray_model()
-    init_ct_models()
-    init_ultrasound_model()
-    init_mri_models()
-    yield
-    print("Shutting down models...")
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # CORS settings
 origins = ["*"]  # allow all origins for simplicity; adjust as needed
@@ -187,7 +173,7 @@ def generate_medical_report(symptoms: List[str], image_bytes: bytes, modality: s
 
     # Generate content with image part and prompt
     response = client.models.generate_content(
-        model="models/gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=contents
     )
     if not response or not hasattr(response, 'text') or response.text is None:
@@ -395,7 +381,7 @@ async def generate_report_ct3d(file: UploadFile = File(...)):
         )
 
         response = client.models.generate_content(
-            model="models/gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=[*image_parts, prompt]
         )
         report = response.text or "<empty>"
@@ -491,7 +477,7 @@ async def generate_report_mri3d(file: UploadFile = File(...)):
 
 
         response = client.models.generate_content(
-            model="models/gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=[*image_parts, prompt]
         )
         report = response.text or "<empty>"

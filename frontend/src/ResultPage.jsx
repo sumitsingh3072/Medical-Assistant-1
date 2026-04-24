@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ReportCard from './ReportCard';
 import { useParams, useLocation } from 'react-router-dom'; // added useLocation
 
-const BASE_API_URL = 'http://127.0.0.1:8000';
+const BASE_API_URL = import.meta.env.VITE_API_URL || '';
 
 const ResultsPage = () => {
   const { cleanType } = useParams(); // e.g., 'xray', 'ct', etc.

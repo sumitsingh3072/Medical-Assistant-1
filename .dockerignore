@@ -1,0 +1,7 @@
+.git/
+node_modules/
+__pycache__/
+*.pyc
+docker/
+sample_reports/
+*.png

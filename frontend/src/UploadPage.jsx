@@ -32,7 +32,7 @@ const UploadPage = ({ selectedImageType, setSelectedImageType, setProcessedData 
     reader.readAsDataURL(selectedFile);
   };
 
-  const BASE_API_URL = 'http://127.0.0.1:8000';
+  const BASE_API_URL = import.meta.env.VITE_API_URL || '';
 
   const handleUpload = async () => {
   if (!file) return setError('Please select a file first.');
