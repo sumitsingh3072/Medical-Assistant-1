@@ -2,3 +2,11 @@ venv/
 __pychache__
 *.pyc
 .env
+data/
+sample_reports/
+temp_*.png
+temp_*.nii
+temp_*.nii.gz
+*.nii
+*.nii.gz
+model_assests/
